@@ -5,7 +5,8 @@
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::Dialog)
+    ui(new Ui::Dialog),
+    enc1(0),enc2(0),r(0)
 {
     ui->setupUi(this);
 
@@ -17,9 +18,11 @@ Dialog::Dialog(QWidget *parent) :
 
     hbTimer.setInterval(250);
     QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(hbTimerOut()));
-    hbTimer.start();
+    hbTimer.start();    
 
-
+    debugPosTimer.setInterval(20);
+    QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
+    debugPosTimer.start();
 }
 
 Dialog::~Dialog()
@@ -92,8 +95,8 @@ void Dialog::hbTimerOut()
         QString itText = lwi->text();
         TSenderInfo *pSI = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
         //qDebug() << pSI->lastHbaRecvd.elapsed();
-        if(pSI->bHbaRecvd == false){
-            if(pSI->lastHbaRecvd.elapsed() > 1000){
+        if(pSI->lastHbaRecvd.elapsed() > 1000){
+            if(pSI->bHbaRecvd == false){
                 qDebug() << "delete client";
                 ui->listWidgetClients->takeItem(r);
                 delete pSI;
@@ -117,6 +120,38 @@ void Dialog::hbTimerOut()
             sndInfo->lastHbaRecvd.restart();
         }
 
+    }
+
+}
+
+typedef struct{
+    int16_t pos1;
+    int16_t pos2;
+    int16_t distance;
+//    int8_t headTemp;
+//    int8_t batteryTemp;
+//    int32_t cashCount;
+} CbDataUdp;
+
+
+void Dialog::debugTimerOut()
+{
+    enc1++;
+    enc2 = 1278;
+    if(enc1 >=8192)
+        enc1 = 0;
+    CbDataUdp cbdata;
+    cbdata.pos1 = enc1;
+    cbdata.pos2 = enc2;
+    cbdata.distance = 12;
+
+    ui->lineEditEnc1->setText(QString::number(enc1));
+    ui->lineEditEnc2->setText(QString::number(enc2));
+    ui->lineEditRange->setText(QString::number(cbdata.distance));
+
+    for(int r=0; r<ui->listWidgetClients->count(); r++){
+        TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
+        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
     }
 
 
