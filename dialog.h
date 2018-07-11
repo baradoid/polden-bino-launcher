@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QUdpSocket>
 #include <QNetworkDatagram>
+#include <QtCore/QTimer>
 
 namespace Ui {
 class Dialog;
@@ -20,10 +21,12 @@ public:
 private:
     Ui::Dialog *ui;
     QUdpSocket *udpSocket;
+    QTimer hbTimer;
 
 
 private slots:
     void handleReadPendingDatagrams();
+    void hbTimerOut();
 };
 
 #endif // DIALOG_H
