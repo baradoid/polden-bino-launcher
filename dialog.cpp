@@ -1,12 +1,14 @@
 #include "dialog.h"
 #include "ui_dialog.h"
 #include  <QTime>
+#include <QtSerialPort/QSerialPortInfo>
 
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
-    enc1(0),enc2(0),r(0)
+    enc1(0),enc2(0),r(0),
+    settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);
 
@@ -22,11 +24,31 @@ Dialog::Dialog(QWidget *parent) :
 
     debugPosTimer.setInterval(20);
     QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
-    debugPosTimer.start();
+    //debugPosTimer.start();
+
+
+    on_pushButton_refreshCom_clicked();
+
+    QString mainCom = settings.value("usbMain", "").toString();
+
+    for(int i=0; i<ui->comComboBox->count(); i++){
+       // ui->comComboBoxUsbMain->itemData()
+        if(ui->comComboBox->itemData(i).toString() == mainCom){
+            ui->comComboBox->setCurrentIndex(i);
+            on_pushButtonComOpen_clicked();
+            //if(ui->checkBoxInitOnStart->isChecked()){
+            //    on_pushButtonInitiate_clicked();
+            //}
+            break;
+        }
+    }
+
 }
 
 Dialog::~Dialog()
 {
+    QString comName = (ui->comComboBox->currentData().toString());
+    settings.setValue("usbMain", comName);
     delete ui;
 }
 
@@ -154,5 +176,118 @@ void Dialog::debugTimerOut()
         udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
     }
 
+
+}
+
+void Dialog::on_pushButtonComOpen_clicked()
+{
+    serial.setBaudRate(115200);
+     if(ui->pushButtonComOpen->text() == "open"){
+         if(serial.isOpen() == false){
+             QString comName = ui->comComboBox->currentText();
+             if(comName.length() > 0){
+                 //UartThread.requestToStart(comName);
+                 serial.setPortName(comName);
+                 if (!serial.open(QIODevice::ReadWrite)) {
+                     qDebug("%s port open FAIL", qUtf8Printable(comName));
+                     return;
+                 }
+                 qDebug("%s port opened", qUtf8Printable(comName));
+                 connect(&serial, SIGNAL(readyRead()),
+                         this, SLOT(handleSerialReadyRead()));
+//                 connect(&serial, SIGNAL(bytesWritten(qint64)),
+//                         this, SLOT(handleSerialDataWritten(qint64)));
+                 ui->pushButtonComOpen->setText("close");
+                 //emit showStatusBarMessage("connected", 3000);
+                 //ui->statusBar->showMessage("connected", 2000);
+                 recvdComPacks = 0;
+                 startRecvTime = QTime::currentTime();
+             }
+         }
+     }
+     else{
+         serial.close();
+         //udpSocket->close();
+         qDebug("port closed");
+         ui->pushButtonComOpen->setText("open");
+         //contrStringQueue.clear();
+         //ui->statusBar->showMessage("disconnected", 2000);
+     }
+}
+
+void Dialog::on_pushButton_refreshCom_clicked()
+{
+    ui->comComboBox->clear();
+    const auto serialPortInfos = QSerialPortInfo::availablePorts();
+    const QString blankString = QObject::tr("N/A");
+      QString description;
+      QString manufacturer;
+      QString serialNumber;
+    for (const QSerialPortInfo &serialPortInfo : serialPortInfos) {
+           description = serialPortInfo.description();
+           manufacturer = serialPortInfo.manufacturer();
+           serialNumber = serialPortInfo.serialNumber();
+           qDebug() << endl
+               << QObject::tr("Port: ") << serialPortInfo.portName() << endl
+               << QObject::tr("Location: ") << serialPortInfo.systemLocation() << endl
+               << QObject::tr("Description: ") << (!description.isEmpty() ? description : blankString) << endl
+               << QObject::tr("Manufacturer: ") << (!manufacturer.isEmpty() ? manufacturer : blankString) << endl
+               << QObject::tr("Serial number: ") << (!serialNumber.isEmpty() ? serialNumber : blankString) << endl
+               << QObject::tr("Vendor Identifier: ") << (serialPortInfo.hasVendorIdentifier() ? QByteArray::number(serialPortInfo.vendorIdentifier(), 16) : blankString) << endl
+               << QObject::tr("Product Identifier: ") << (serialPortInfo.hasProductIdentifier() ? QByteArray::number(serialPortInfo.productIdentifier(), 16) : blankString) << endl
+               << QObject::tr("Busy: ") << (serialPortInfo.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
+           ui->comComboBox->addItem(serialPortInfo.portName(), serialPortInfo.portName());
+    }
+}
+
+
+void Dialog::processStr(QString str)
+{
+    recvdComPacks++;
+    //qDebug() << str.length() <<":" <<str;
+//    if(str.length() != 41){
+//        str.remove("\r\n");
+//        qDebug() << "string length " << str.length() << "not equal 41" << qPrintable(str);
+//    }
+    QStringList strList = str.split(" ");
+    if(strList.size() >= 3){
+        int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
+        int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
+        int dist = strList[2].toInt(Q_NULLPTR, 10);
+        //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
+        ui->lineEditEnc1->setText(QString::number(xPos1));
+        ui->lineEditEnc2->setText(QString::number(xPos2));
+        ui->lineEditRange->setText(QString::number(dist));
+        //ui->lineEditTerm1->setText(QString::number(temp));
+        //qDebug() << xPos1 << xPos2;
+
+        CbDataUdp cbdata;
+        cbdata.pos1 = (int16_t)xPos1;
+        cbdata.pos2 = (int16_t)xPos2;
+        cbdata.distance = (int16_t)dist;
+
+        for(int r=0; r<ui->listWidgetClients->count(); r++){
+            TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
+            udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
+        }
+    }
+
+    //appendPosToGraph(xPos);
+
+}
+
+void Dialog::handleSerialReadyRead()
+{
+    QByteArray ba = serial.readAll();
+
+    bytesRecvd += ba.length();
+
+    for(int i=0; i<ba.length(); i++){
+        recvStr.append((char)ba[i]);
+        if(ba[i]=='\n'){
+            processStr(recvStr);
+            recvStr.clear();
+        }
+    }
 
 }

@@ -5,6 +5,9 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QtCore/QTimer>
+#include <QSerialPort>
+#include <QTime>
+#include <QSettings>
 
 namespace Ui {
 class Dialog;
@@ -26,12 +29,28 @@ private:
 
     QTimer debugPosTimer;
 
+    QSerialPort serial;
+    int recvdComPacks;
+    int bytesRecvd;
+    QTime startRecvTime;
+
+    QString recvStr;
+
+    QSettings settings;
+
+    void processStr(QString str);
+
 private slots:
     void handleReadPendingDatagrams();
     void hbTimerOut();
 
     void debugTimerOut();
 
+    void on_pushButtonComOpen_clicked();
+    void on_pushButton_refreshCom_clicked();
+
+
+    void handleSerialReadyRead();
 };
 
 #endif // DIALOG_H
