@@ -38,7 +38,11 @@ private:
 
     QSettings settings;
 
+    uint16_t rangeThresh;
+
     void processStr(QString str);
+
+
 
 private slots:
     void handleReadPendingDatagrams();
@@ -51,6 +55,7 @@ private slots:
 
 
     void handleSerialReadyRead();
+    void on_pushButtonSet_clicked();
 };
 
 #endif // DIALOG_H

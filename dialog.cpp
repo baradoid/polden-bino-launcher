@@ -1,14 +1,15 @@
 #include "dialog.h"
 #include "ui_dialog.h"
-#include  <QTime>
+#include <QTime>
 #include <QtSerialPort/QSerialPortInfo>
-
+#include <QDebug>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
     enc1(0),enc2(0),r(0),
-    settings("murinets", "binoc-launcher")
+    settings("bino-settings.ini", QSettings::IniFormat)
+    //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);
 
@@ -43,12 +44,23 @@ Dialog::Dialog(QWidget *parent) :
         }
     }
 
+    rangeThresh = settings.value("rangeThresh", 20).toInt();
+
+    ui->lineEditRangeThresh->setValidator( new QIntValidator(0, 100, this) );
+    ui->lineEditRangeThresh->setText(QString::number(rangeThresh));
+
+    ui->lineEditEnc1->setText("n/a");
+    ui->lineEditEnc2->setText("n/a");
+    ui->lineEditRange->setText("n/a");
+    ui->lineEditRange_2->setText("n/a");
 }
 
 Dialog::~Dialog()
 {
     QString comName = (ui->comComboBox->currentData().toString());
     settings.setValue("usbMain", comName);
+    settings.setValue("rangeThresh", rangeThresh);
+
     delete ui;
 }
 
@@ -149,7 +161,8 @@ void Dialog::hbTimerOut()
 typedef struct{
     int16_t pos1;
     int16_t pos2;
-    int16_t distance;
+    uint16_t rangeThresh:1;
+    //int16_t distance;
 //    int8_t headTemp;
 //    int8_t batteryTemp;
 //    int32_t cashCount;
@@ -165,11 +178,11 @@ void Dialog::debugTimerOut()
     CbDataUdp cbdata;
     cbdata.pos1 = enc1;
     cbdata.pos2 = enc2;
-    cbdata.distance = 12;
+    //cbdata.distance = 12;
 
     ui->lineEditEnc1->setText(QString::number(enc1));
     ui->lineEditEnc2->setText(QString::number(enc2));
-    ui->lineEditRange->setText(QString::number(cbdata.distance));
+    //ui->lineEditRange->setText(QString::number(cbdata.distance));
 
     for(int r=0; r<ui->listWidgetClients->count(); r++){
         TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
@@ -264,7 +277,8 @@ void Dialog::processStr(QString str)
         CbDataUdp cbdata;
         cbdata.pos1 = (int16_t)xPos1;
         cbdata.pos2 = (int16_t)xPos2;
-        cbdata.distance = (int16_t)dist;
+        //cbdata.distance = (int16_t)dist;
+        cbdata.rangeThresh = (int)(dist>rangeThresh);
 
         for(int r=0; r<ui->listWidgetClients->count(); r++){
             TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
@@ -290,4 +304,10 @@ void Dialog::handleSerialReadyRead()
         }
     }
 
+}
+
+void Dialog::on_pushButtonSet_clicked()
+{
+    rangeThresh = ui->lineEditRangeThresh->text().toInt();
+    qDebug("thresh: %d", rangeThresh);
 }
