@@ -53,6 +53,10 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditEnc2->setText("n/a");
     ui->lineEditRange->setText("n/a");
     ui->lineEditRange_2->setText("n/a");
+
+    ui->lineEditDebugR->setValidator(new QIntValidator(0,50, this));
+    ui->lineEditDebugX->setValidator(new QIntValidator(0,8191, this));
+    ui->lineEditDebugY->setValidator(new QIntValidator(0,8191, this));
 }
 
 Dialog::~Dialog()
@@ -161,8 +165,8 @@ void Dialog::hbTimerOut()
 typedef struct{
     int16_t pos1;
     int16_t pos2;
-    uint16_t rangeThresh:1;
-    //int16_t distance;
+    //uint16_t rangeThresh:1;
+    int16_t distance;
 //    int8_t headTemp;
 //    int8_t batteryTemp;
 //    int32_t cashCount;
@@ -277,8 +281,8 @@ void Dialog::processStr(QString str)
         CbDataUdp cbdata;
         cbdata.pos1 = (int16_t)xPos1;
         cbdata.pos2 = (int16_t)xPos2;
-        //cbdata.distance = (int16_t)dist;
-        cbdata.rangeThresh = (int)(dist>rangeThresh);
+        cbdata.distance = (int16_t)dist;
+        //cbdata.rangeThresh = (int)(dist>rangeThresh);
 
         for(int r=0; r<ui->listWidgetClients->count(); r++){
             TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
@@ -310,4 +314,21 @@ void Dialog::on_pushButtonSet_clicked()
 {
     rangeThresh = ui->lineEditRangeThresh->text().toInt();
     qDebug("thresh: %d", rangeThresh);
+}
+
+void Dialog::on_pushButtonDebugSend_clicked()
+{
+    int x,y,r;
+    x = ui->lineEditDebugX->text().toInt();
+    y = ui->lineEditDebugY->text().toInt();
+    r = ui->lineEditDebugR->text().toInt();
+    CbDataUdp cbdata;
+    cbdata.pos1 = (int16_t)x;
+    cbdata.pos2 = (int16_t)y;
+    cbdata.distance = (int16_t)r;
+    for(int r=0; r<ui->listWidgetClients->count(); r++){
+        TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
+        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
+    }
+
 }

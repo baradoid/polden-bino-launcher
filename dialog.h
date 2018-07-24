@@ -56,6 +56,7 @@ private slots:
 
     void handleSerialReadyRead();
     void on_pushButtonSet_clicked();
+    void on_pushButtonDebugSend_clicked();
 };
 
 #endif // DIALOG_H
