@@ -3,12 +3,16 @@
 #include <QTime>
 #include <QtSerialPort/QSerialPortInfo>
 #include <QDebug>
+#include <QProcess>
+#include <QFileDialog>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
     enc1(0),enc2(0),r(0),
-    settings("bino-settings.ini", QSettings::IniFormat)
+    settings("bino-settings.ini", QSettings::IniFormat),
+    wdNoClientsTimeSecs(0),
+    bUnityStarted(false)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);
@@ -57,6 +61,21 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditDebugR->setValidator(new QIntValidator(0,50, this));
     ui->lineEditDebugX->setValidator(new QIntValidator(0,8191, this));
     ui->lineEditDebugY->setValidator(new QIntValidator(0,8191, this));
+
+    QString unityBuildPath = settings.value("watchdog/unityBuildExePath").toString();
+    ui->lineEditBuildPath->setText(unityBuildPath);
+    ui->lineEditBuildPath->setToolTip(unityBuildPath);
+
+    ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(30,999, this));
+    ui->lineEditWdTimeOutSecs->setText(settings.value("watchdog/timeout", 10).toString());
+
+    connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
+    wdTimer.setInterval(1000);
+    wdTimer.start();
+
+    ui->checkBoxWdEnable->setChecked(settings.value("watchdog/ena", false).toBool());
+
+
 }
 
 Dialog::~Dialog()
@@ -283,6 +302,7 @@ void Dialog::processStr(QString str)
         cbdata.pos2 = (int16_t)xPos2;
         //cbdata.distance = (int16_t)dist;
         cbdata.rangeThresh = (int)(dist<rangeThresh);
+        ui->checkBoxThreshExcess->setChecked(dist<rangeThresh);
 
         for(int r=0; r<ui->listWidgetClients->count(); r++){
             TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
@@ -331,4 +351,63 @@ void Dialog::on_pushButtonDebugSend_clicked()
         udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
     }
 
+}
+
+void Dialog::on_pushButtonWDTest_clicked()
+{
+    QProcess p;
+    p.start("taskkill /IM VR.exe");
+    p.waitForFinished();
+    QString str = ui->lineEditBuildPath->text();
+    if(str.isEmpty() == true)
+        return;
+    p.startDetached(str);
+
+}
+
+void Dialog::on_pushButtonWdSelectPath_clicked()
+{
+    QString str = QFileDialog::getOpenFileName(this,
+       tr("Select unity build exe file"), "/home/jana", tr("Unity Build exe file (*.exe)"));
+    settings.setValue("watchdog/unityBuildExePath", str);
+    ui->lineEditBuildPath->setText(str);
+    ui->lineEditBuildPath->setToolTip(str);
+}
+
+void Dialog::on_lineEditWdTimeOutSecs_editingFinished()
+{
+    int wto = ui->lineEditWdTimeOutSecs->text().toInt();
+    settings.setValue("watchdog/timeout", wto);
+}
+
+
+void Dialog::handleWdTimeout()
+{
+    if(ui->listWidgetClients->count() == 0){
+        ui->label_wd_noclients->show();
+        ui->label_wd_noclients_2->show();
+        ui->lineEdit_wdNoClientsTimer->show();
+        wdNoClientsTimeSecs++;
+        ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
+        int wto = ui->lineEditWdTimeOutSecs->text().toInt();
+        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
+          on_pushButtonWDTest_clicked();
+          bUnityStarted = true;
+        }
+
+    }
+    else{
+        bUnityStarted = false;
+        ui->label_wd_noclients->hide();
+        ui->label_wd_noclients_2->hide();
+        ui->lineEdit_wdNoClientsTimer->hide();
+        wdNoClientsTimeSecs=0;
+    }
+    //qDebug("wd");
+
+}
+
+void Dialog::on_checkBoxWdEnable_clicked(bool checked)
+{
+    settings.setValue("watchdog/ena", checked);
 }

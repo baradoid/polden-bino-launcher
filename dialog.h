@@ -42,6 +42,10 @@ private:
 
     void processStr(QString str);
 
+    QTimer wdTimer;
+    int wdNoClientsTimeSecs;
+    bool bUnityStarted;
+
 
 
 private slots:
@@ -57,6 +61,11 @@ private slots:
     void handleSerialReadyRead();
     void on_pushButtonSet_clicked();
     void on_pushButtonDebugSend_clicked();
+    void on_pushButtonWDTest_clicked();
+    void on_pushButtonWdSelectPath_clicked();
+    void on_lineEditWdTimeOutSecs_editingFinished();
+    void handleWdTimeout();
+    void on_checkBoxWdEnable_clicked(bool checked);
 };
 
 #endif // DIALOG_H
