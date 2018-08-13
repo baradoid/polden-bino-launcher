@@ -66,7 +66,7 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditBuildPath->setText(unityBuildPath);
     ui->lineEditBuildPath->setToolTip(unityBuildPath);
 
-    ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(30,999, this));
+    ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(10,999, this));
     ui->lineEditWdTimeOutSecs->setText(settings.value("watchdog/timeout", 10).toString());
 
     connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
@@ -97,6 +97,7 @@ typedef struct{
 
 void Dialog::handleReadPendingDatagrams()
 {
+    //qDebug("handleReadPendingDatagrams");
     while (udpSocket->hasPendingDatagrams()) {
         QNetworkDatagram datagram = udpSocket->receiveDatagram();
 
@@ -128,7 +129,7 @@ void Dialog::handleReadPendingDatagrams()
                 if(itText == sAddrStr){
                     //pSI->lastHbaRecvd.restart();
                     pSI->bHbaRecvd = true;
-                    qDebug() << pSI->lastHbaRecvd.elapsed();
+                    //qDebug() << pSI->lastHbaRecvd.elapsed();
                     break;
                 }
             }
@@ -142,19 +143,22 @@ void Dialog::handleReadPendingDatagrams()
 
 
     }
+    //qDebug("handleReadPendingDatagrams end");
 
 }
 
 void Dialog::hbTimerOut()
 {
+    //qDebug("check1");
     for(int r=0; r<ui->listWidgetClients->count(); r++){
         QListWidgetItem *lwi = ui->listWidgetClients->item(r);
         QString itText = lwi->text();
         TSenderInfo *pSI = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
         //qDebug() << pSI->lastHbaRecvd.elapsed();
-        if(pSI->lastHbaRecvd.elapsed() > 1000){
+        //qDebug("check1 %d", pSI->lastHbaRecvd.elapsed() );
+        if(pSI->lastHbaRecvd.elapsed() > 500){
             if(pSI->bHbaRecvd == false){
-                qDebug() << "delete client";
+                //qDebug() << "delete client";
                 ui->listWidgetClients->takeItem(r);
                 delete pSI;
                 break;
@@ -165,19 +169,21 @@ void Dialog::hbTimerOut()
 
     }
 
+    //qDebug("check2");
     for(int r=0; r<ui->listWidgetClients->count(); r++){
         TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
         //if(itText == sAddr)
         //    bExist = true;
         //if(udpSocket->isWritable()){
         //}
-        if(sndInfo->bHbaRecvd = true){
+        if(sndInfo->bHbaRecvd == true){
             sndInfo->bHbaRecvd = false;
             udpSocket->writeDatagram("hb", sndInfo->addr, sndInfo->port);
             sndInfo->lastHbaRecvd.restart();
         }
 
     }
+    //qDebug("check2 end");
 
 }
 
