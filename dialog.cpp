@@ -49,7 +49,6 @@ Dialog::Dialog(QWidget *parent) :
     //debugPosTimer.start();
 
 
-
     on_pushButton_refreshCom_clicked();
 
     QString mainCom = settings.value("usbMain", "").toString();
@@ -93,14 +92,7 @@ Dialog::Dialog(QWidget *parent) :
 
     ui->checkBoxWdEnable->setChecked(settings.value("watchdog/ena", false).toBool());
 
-
-    //QDir dir;
-    //qDebug() <<QDir::currentPath(); // dir.absolutePath();
-
-
-
-
-
+    ui->label_buildTime->setText(QString(__DATE__) + " " + QString(__TIME__));
 
 }
 
