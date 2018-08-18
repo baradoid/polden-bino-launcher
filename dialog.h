@@ -46,6 +46,8 @@ private:
     int wdNoClientsTimeSecs;
     bool bUnityStarted;
 
+    void appendLogString(QString str);
+    void appendLogFileString(QString str);
 
 
 private slots:
@@ -66,6 +68,8 @@ private slots:
     void on_lineEditWdTimeOutSecs_editingFinished();
     void handleWdTimeout();
     void on_checkBoxWdEnable_clicked(bool checked);
+    void on_lineEditLogPath_editingFinished();
+    void on_pushButtonLogSelectPath_clicked();
 };
 
 #endif // DIALOG_H

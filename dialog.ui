@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>530</width>
-    <height>450</height>
+    <height>600</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>530</width>
-    <height>450</height>
+    <height>600</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>530</width>
-    <height>450</height>
+    <height>600</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -627,12 +627,78 @@
     </property>
    </widget>
   </widget>
+  <widget class="QGroupBox" name="groupBox_7">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>440</y>
+     <width>511</width>
+     <height>151</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Протокол</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QWidget" name="widget" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Сохранять в папку:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineEditLogPath"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButtonLogSelectPath">
+         <property name="minimumSize">
+          <size>
+           <width>31</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>31</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTextEdit" name="textEditLog"/>
+    </item>
+   </layout>
+  </widget>
   <zorder>groupBox_3</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
   <zorder>groupBox_4</zorder>
   <zorder>groupBox_5</zorder>
   <zorder>groupBox_6</zorder>
+  <zorder>groupBox_7</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

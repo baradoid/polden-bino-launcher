@@ -17,8 +17,25 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    QString logDirPath = settings.value("logPath").toString();
+    if(logDirPath.isEmpty()){
+        logDirPath = QDir::currentPath() + "/logs";
+    }
+
+    ui->lineEditLogPath->setText(logDirPath);
+
+    appendLogFileString("\r\n\r\n");
+    appendLogFileString("--- start");
+
+
     udpSocket = new QUdpSocket(this);
-    udpSocket->bind(8050);
+    if(udpSocket->bind(8050)){
+        appendLogString("udp socket on port 8050 bind OK");
+    }
+    else{
+        appendLogString("udp socket on port 8050 bind FAIL");
+    }
+
 
     connect(udpSocket, SIGNAL(readyRead()),
             this, SLOT(handleReadPendingDatagrams()));
@@ -30,6 +47,7 @@ Dialog::Dialog(QWidget *parent) :
     debugPosTimer.setInterval(20);
     QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
     //debugPosTimer.start();
+
 
 
     on_pushButton_refreshCom_clicked();
@@ -74,6 +92,14 @@ Dialog::Dialog(QWidget *parent) :
     wdTimer.start();
 
     ui->checkBoxWdEnable->setChecked(settings.value("watchdog/ena", false).toBool());
+
+
+    //QDir dir;
+    //qDebug() <<QDir::currentPath(); // dir.absolutePath();
+
+
+
+
 
 
 }
@@ -417,3 +443,44 @@ void Dialog::on_checkBoxWdEnable_clicked(bool checked)
 {
     settings.setValue("watchdog/ena", checked);
 }
+
+void Dialog::on_lineEditLogPath_editingFinished()
+{
+    QString pathStr = ui->lineEditLogPath->text();
+    ui->lineEditLogPath->setToolTip(pathStr);
+    settings.setValue("logPath", pathStr);
+}
+
+void Dialog::on_pushButtonLogSelectPath_clicked()
+{
+    QString str = QFileDialog::getExistingDirectory(this, tr("Select dir for logs"));
+    //settings.setValue("watchdog/unityBuildExePath", str);
+    ui->lineEditLogPath->setText(str);
+    //ui->lineEditLogPath->setToolTip(str);
+    on_lineEditLogPath_editingFinished();
+}
+
+void Dialog::appendLogString(QString str)
+{
+    QString curTime = QTime::currentTime().toString();
+    QString logString = curTime + ">" + str;
+
+    ui->textEditLog->append(logString);
+    appendLogFileString(logString);
+}
+
+void Dialog::appendLogFileString(QString logString)
+{
+    QString pathStr = ui->lineEditLogPath->text();
+    if(QDir().mkpath(pathStr) == true){
+        QString logFileName = QDate::currentDate().toString("yyyy-MM-dd")+".txt";
+        pathStr + logFileName;
+        //qDebug() << "creates path ok " << qPrintable(pathStr + "/" + logFileName);
+        QFile f(pathStr + "/" + logFileName);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            f.write(qPrintable(logString + "\r\n"));
+            f.close();
+        }
+    }
+}
+
