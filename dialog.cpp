@@ -17,16 +17,18 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QString logDirPath = settings.value("logPath").toString();
+    QString compileDateTime = QString(__DATE__) + " " + QString(__TIME__);
+    ui->label_buildTime->setText(compileDateTime);
+
+    QString logDirPath = settings.value("logPath").toString();    
     if(logDirPath.isEmpty()){
         logDirPath = QDir::currentPath() + "/logs";
     }
 
     ui->lineEditLogPath->setText(logDirPath);
-
-    appendLogFileString("\r\n\r\n");
+    appendLogFileString("\r\n");
     appendLogFileString("--- start");
-
+    appendLogString(QString("restore log dir:\"")+(logDirPath.isEmpty()? "n/a":logDirPath)+ "\"");
 
     udpSocket = new QUdpSocket(this);
     if(udpSocket->bind(8050)){
@@ -35,7 +37,6 @@ Dialog::Dialog(QWidget *parent) :
     else{
         appendLogString("udp socket on port 8050 bind FAIL");
     }
-
 
     connect(udpSocket, SIGNAL(readyRead()),
             this, SLOT(handleReadPendingDatagrams()));
@@ -48,10 +49,11 @@ Dialog::Dialog(QWidget *parent) :
     QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
     //debugPosTimer.start();
 
-
     on_pushButton_refreshCom_clicked();
 
     QString mainCom = settings.value("usbMain", "").toString();
+
+    appendLogString(QString("restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
 
     for(int i=0; i<ui->comComboBox->count(); i++){
        // ui->comComboBoxUsbMain->itemData()
@@ -80,11 +82,14 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditDebugY->setValidator(new QIntValidator(0,8191, this));
 
     QString unityBuildPath = settings.value("watchdog/unityBuildExePath").toString();
+    appendLogString(QString("restore unity path:\"")+(unityBuildPath.isEmpty()? "n/a":unityBuildPath)+ "\"");
     ui->lineEditBuildPath->setText(unityBuildPath);
     ui->lineEditBuildPath->setToolTip(unityBuildPath);
 
     ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(10,999, this));
-    ui->lineEditWdTimeOutSecs->setText(settings.value("watchdog/timeout", 10).toString());
+    QString wdTo = settings.value("watchdog/timeout", 10).toString();
+    appendLogString(QString("restore watchdog time out:\"")+(wdTo.isEmpty()? "n/a":wdTo)+ "\"");
+    ui->lineEditWdTimeOutSecs->setText(wdTo);
 
     connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
     wdTimer.setInterval(1000);
@@ -276,13 +281,15 @@ void Dialog::on_pushButtonComOpen_clicked()
 }
 
 void Dialog::on_pushButton_refreshCom_clicked()
-{
+{    
     ui->comComboBox->clear();
     const auto serialPortInfos = QSerialPortInfo::availablePorts();
-    const QString blankString = QObject::tr("N/A");
-      QString description;
-      QString manufacturer;
-      QString serialNumber;
+    const QString blankString = QObject::tr("N/A");    
+    QString description;
+    QString manufacturer;
+    QString serialNumber;
+
+    QString logStr("com ports present: ");
     for (const QSerialPortInfo &serialPortInfo : serialPortInfos) {
            description = serialPortInfo.description();
            manufacturer = serialPortInfo.manufacturer();
@@ -297,7 +304,16 @@ void Dialog::on_pushButton_refreshCom_clicked()
                << QObject::tr("Product Identifier: ") << (serialPortInfo.hasProductIdentifier() ? QByteArray::number(serialPortInfo.productIdentifier(), 16) : blankString) << endl
                << QObject::tr("Busy: ") << (serialPortInfo.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
            ui->comComboBox->addItem(serialPortInfo.portName(), serialPortInfo.portName());
+           logStr += (serialPortInfo.portName() + " " + serialPortInfo.systemLocation() + " " + description);
     }
+
+    if(ui->comComboBox->count() == 0 ){
+        logStr += "n/a";
+    }
+    appendLogString(logStr);
+
+    //appendLogString("----");
+
 }
 
 

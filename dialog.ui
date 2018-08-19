@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Bino-launcher</string>
+   <string>bino-launcher</string>
   </property>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
