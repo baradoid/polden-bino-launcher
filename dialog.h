@@ -71,6 +71,7 @@ private slots:
     void on_checkBoxWdEnable_clicked(bool checked);
     void on_lineEditLogPath_editingFinished();
     void on_pushButtonLogSelectPath_clicked();
+    void on_checkBoxLogClearIfSizeExceed_clicked();
 };
 
 #endif // DIALOG_H

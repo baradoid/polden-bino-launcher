@@ -20,10 +20,12 @@ Dialog::Dialog(QWidget *parent) :
     QString compileDateTime = QString(__DATE__) + " " + QString(__TIME__);
     ui->label_buildTime->setText(compileDateTime);
 
-    QString logDirPath = settings.value("logPath").toString();    
+    QString logDirPath = settings.value("log/logPath").toString();
     if(logDirPath.isEmpty()){
         logDirPath = QDir::currentPath() + "/logs";
     }
+
+    ui->checkBoxLogClearIfSizeExceed->setChecked(settings.value("log/logCLearIfSizeExceed", true).toBool());
 
     ui->lineEditLogPath->setText(logDirPath);
     appendLogFileString("\r\n");
@@ -467,7 +469,7 @@ void Dialog::on_lineEditLogPath_editingFinished()
 {
     QString pathStr = ui->lineEditLogPath->text();
     ui->lineEditLogPath->setToolTip(pathStr);
-    settings.setValue("logPath", pathStr);
+    settings.setValue("log/logPath", pathStr);
 }
 
 void Dialog::on_pushButtonLogSelectPath_clicked()
@@ -494,6 +496,27 @@ void Dialog::appendLogFileString(QString logString)
 {
     QString pathStr = ui->lineEditLogPath->text();
     if(QDir().mkpath(pathStr) == true){
+
+        qint64 size = 0;
+        QDir dir(pathStr);
+        //calculate total size of current directories' files
+        for(QString filePath : dir.entryList(QStringList() << "*.txt", QDir::Files)) {
+            QFileInfo fi(dir, filePath);
+            size+= fi.size();
+
+        }
+        //qDebug() << "dir path" << size ;
+        //qDebug() << logFiles;
+        ui->lineEditLogSize->setText(QString::number((float)size/1024., 'f', 2));
+
+        if((ui->checkBoxLogClearIfSizeExceed->isChecked()) &&(size > (1024*1024))){
+            QStringList logFiles = dir.entryList(QStringList() << "*.txt" << "*.JPG",QDir::Files);
+            if((logFiles.count()>0))
+                qDebug() << "remove file" << dir.absoluteFilePath(logFiles[0]) << QFile(dir.absoluteFilePath(logFiles[0])).remove();
+        }
+
+
+
         QString logFileName = QDate::currentDate().toString("yyyy-MM-dd")+".txt";
         pathStr + logFileName;
         //qDebug() << "creates path ok " << qPrintable(pathStr + "/" + logFileName);
@@ -529,3 +552,8 @@ void Dialog::restartUnityBuild()
     }
 }
 
+
+void Dialog::on_checkBoxLogClearIfSizeExceed_clicked()
+{
+    settings.setValue("log/logCLearIfSizeExceed", ui->checkBoxLogClearIfSizeExceed->isChecked());
+}
