@@ -507,9 +507,11 @@ void Dialog::appendLogFileString(QString logString)
         }
         //qDebug() << "dir path" << size ;
         //qDebug() << logFiles;
-        ui->lineEditLogSize->setText(QString::number((float)size/1024., 'f', 2));
+        //ui->lineEditLogSize->setText(QString::number((float)size/1024., 'f', 2));
+        ui->lineEditLogSize->setText(formatSize(size));
 
-        if((ui->checkBoxLogClearIfSizeExceed->isChecked()) &&(size > (1024*1024))){
+
+        if((ui->checkBoxLogClearIfSizeExceed->isChecked()) &&(size > (10*1024*1024))){
             QStringList logFiles = dir.entryList(QStringList() << "*.txt" << "*.JPG",QDir::Files);
             if((logFiles.count()>0))
                 qDebug() << "remove file" << dir.absoluteFilePath(logFiles[0]) << QFile(dir.absoluteFilePath(logFiles[0])).remove();
@@ -556,4 +558,16 @@ void Dialog::restartUnityBuild()
 void Dialog::on_checkBoxLogClearIfSizeExceed_clicked()
 {
     settings.setValue("log/logCLearIfSizeExceed", ui->checkBoxLogClearIfSizeExceed->isChecked());
+}
+
+QString Dialog::formatSize(qint64 size)
+{
+    QStringList units = {"Bytes", "KB", "MB", "GB", "TB", "PB"};
+    int i;
+    double outputSize = size;
+    for(i=0; i<units.size()-1; i++) {
+        if(outputSize<1024) break;
+        outputSize= outputSize/1024;
+    }
+    return QString("%0 %1").arg(outputSize, 0, 'f', 2).arg(units[i]);
 }

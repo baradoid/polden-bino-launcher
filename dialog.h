@@ -50,6 +50,7 @@ private:
     void appendLogFileString(QString str);
 
     void restartUnityBuild();
+    QString formatSize(qint64 size);
 
 private slots:
     void handleReadPendingDatagrams();
