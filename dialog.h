@@ -49,6 +49,7 @@ private:
     void appendLogString(QString str);
     void appendLogFileString(QString str);
 
+    void restartUnityBuild();
 
 private slots:
     void handleReadPendingDatagrams();

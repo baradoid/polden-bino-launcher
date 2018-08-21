@@ -55,15 +55,21 @@ Dialog::Dialog(QWidget *parent) :
 
     appendLogString(QString("restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
 
-    for(int i=0; i<ui->comComboBox->count(); i++){
-       // ui->comComboBoxUsbMain->itemData()
-        if(ui->comComboBox->itemData(i).toString() == mainCom){
-            ui->comComboBox->setCurrentIndex(i);
-            on_pushButtonComOpen_clicked();
-            //if(ui->checkBoxInitOnStart->isChecked()){
-            //    on_pushButtonInitiate_clicked();
-            //}
-            break;
+    if(ui->comComboBox->count() == 0){
+        appendLogString(QString("no com ports in system"));
+    }
+    else{
+        for(int i=0; i<ui->comComboBox->count(); i++){
+           // ui->comComboBoxUsbMain->itemData()
+            if(ui->comComboBox->itemData(i).toString() == mainCom){
+                appendLogString(QString("com port %1 present. Try open.").arg(mainCom));
+                ui->comComboBox->setCurrentIndex(i);
+                on_pushButtonComOpen_clicked();
+                //if(ui->checkBoxInitOnStart->isChecked()){
+                //    on_pushButtonInitiate_clicked();
+                //}
+                break;
+            }
         }
     }
 
@@ -124,9 +130,12 @@ void Dialog::handleReadPendingDatagrams()
     while (udpSocket->hasPendingDatagrams()) {
         QNetworkDatagram datagram = udpSocket->receiveDatagram();
 
+        if(datagram.isValid() == false)
+            continue;
+
         QString sAddrStr = datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort());
 
-        if(datagram.data() == "reg"){
+        if(datagram.data() == "reg"){            
             bool bExist = false;
 
             for(int r=0; r<ui->listWidgetClients->count(); r++){
@@ -134,7 +143,8 @@ void Dialog::handleReadPendingDatagrams()
                 if(itText == sAddrStr)
                     bExist = true;
             }
-            if(bExist == false){
+            appendLogString("UDP client reg: "+datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort()));
+            if(bExist == false){                
                 TSenderInfo *pSI = new TSenderInfo;
                 pSI->addr = datagram.senderAddress();
                 pSI->port = datagram.senderPort();
@@ -181,6 +191,7 @@ void Dialog::hbTimerOut()
         //qDebug("check1 %d", pSI->lastHbaRecvd.elapsed() );
         if(pSI->lastHbaRecvd.elapsed() > 500){
             if(pSI->bHbaRecvd == false){
+                appendLogString(QString("UDP client %1:%2 no answer in timeout 500 ms. delete. ").arg(pSI->addr.toString()).arg(QString::number(pSI->port)));
                 //qDebug() << "delete client";
                 ui->listWidgetClients->takeItem(r);
                 delete pSI;
@@ -255,9 +266,11 @@ void Dialog::on_pushButtonComOpen_clicked()
                  serial.setPortName(comName);
                  if (!serial.open(QIODevice::ReadWrite)) {
                      qDebug("%s port open FAIL", qUtf8Printable(comName));
+                     appendLogString(QString("%1 port open FAIL").arg(comName));
                      return;
-                 }
+                 }                 
                  qDebug("%s port opened", qUtf8Printable(comName));
+                 appendLogString(QString("%1 port opened").arg(comName));
                  connect(&serial, SIGNAL(readyRead()),
                          this, SLOT(handleSerialReadyRead()));
 //                 connect(&serial, SIGNAL(bytesWritten(qint64)),
@@ -395,23 +408,19 @@ void Dialog::on_pushButtonDebugSend_clicked()
 
 void Dialog::on_pushButtonWDTest_clicked()
 {
-    QProcess p;
-    p.start("taskkill /IM VR.exe");
-    p.waitForFinished();
-    QString str = ui->lineEditBuildPath->text();
-    if(str.isEmpty() == true)
-        return;
-    p.startDetached(str);
-
+    appendLogString("watchdog: test button");
+    restartUnityBuild();
 }
 
 void Dialog::on_pushButtonWdSelectPath_clicked()
 {
     QString str = QFileDialog::getOpenFileName(this,
        tr("Select unity build exe file"), "/home/jana", tr("Unity Build exe file (*.exe)"));
-    settings.setValue("watchdog/unityBuildExePath", str);
-    ui->lineEditBuildPath->setText(str);
-    ui->lineEditBuildPath->setToolTip(str);
+    if(str.isEmpty() == false){
+        settings.setValue("watchdog/unityBuildExePath", str);
+        ui->lineEditBuildPath->setText(str);
+        ui->lineEditBuildPath->setToolTip(str);
+    }
 }
 
 void Dialog::on_lineEditWdTimeOutSecs_editingFinished()
@@ -432,6 +441,8 @@ void Dialog::handleWdTimeout()
         int wto = ui->lineEditWdTimeOutSecs->text().toInt();
         if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
           on_pushButtonWDTest_clicked();
+          appendLogString("watchdog: no clients in timeout. Try to restart unity build");
+          restartUnityBuild();
           bUnityStarted = true;
         }
 
@@ -462,10 +473,12 @@ void Dialog::on_lineEditLogPath_editingFinished()
 void Dialog::on_pushButtonLogSelectPath_clicked()
 {
     QString str = QFileDialog::getExistingDirectory(this, tr("Select dir for logs"));
-    //settings.setValue("watchdog/unityBuildExePath", str);
-    ui->lineEditLogPath->setText(str);
-    //ui->lineEditLogPath->setToolTip(str);
-    on_lineEditLogPath_editingFinished();
+    if(str.isEmpty() == false){
+        //settings.setValue("watchdog/unityBuildExePath", str);
+        ui->lineEditLogPath->setText(str);
+        //ui->lineEditLogPath->setToolTip(str);
+        on_lineEditLogPath_editingFinished();
+    }
 }
 
 void Dialog::appendLogString(QString str)
@@ -489,6 +502,30 @@ void Dialog::appendLogFileString(QString logString)
             f.write(qPrintable(logString + "\r\n"));
             f.close();
         }
+    }
+}
+
+void Dialog::restartUnityBuild()
+{
+    QProcess p;
+
+    p.start("taskkill /IM VR.exe");
+    if(p.waitForFinished()){
+        appendLogString("kill \"VR.exe\" ... OK");
+    }
+    else{
+        appendLogString("kill \"VR.exe\" ... FAIL");
+    }
+    QString str = ui->lineEditBuildPath->text();
+    if(str.isEmpty() == true){
+        appendLogString("Path empty. Nothing to start.");
+        return;
+    }
+    if(p.startDetached(str)){
+        appendLogString(QString("start \"") + str + "\" ... OK");
+    }
+    else{
+        appendLogString(QString("start \"") + str + "\" ... FAIL");
     }
 }
 
