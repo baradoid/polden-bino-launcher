@@ -802,6 +802,60 @@
     <string>Builded on:</string>
    </property>
   </widget>
+  <widget class="QGroupBox" name="groupBox_8">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>130</y>
+     <width>251</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Звук</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QCheckBox" name="checkBoxAudioEnableOnStartup">
+      <property name="text">
+       <string>Включать при запуске</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget_3" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="audioOn">
+         <property name="text">
+          <string>Audio ON</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="audioOff">
+         <property name="text">
+          <string>Audio OFF</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
   <zorder>groupBox_3</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
@@ -811,6 +865,7 @@
   <zorder>groupBox_7</zorder>
   <zorder>label_buildTime</zorder>
   <zorder>label_16</zorder>
+  <zorder>groupBox_8</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

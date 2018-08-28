@@ -49,7 +49,11 @@ Dialog::Dialog(QWidget *parent) :
 
     debugPosTimer.setInterval(20);
     QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
-    //debugPosTimer.start();
+    //debugPosTimer.start();       
+
+    bool bAudioEnableOnStartup = settings.value("auidoEnableOnStartup", true).toBool();
+    appendLogString(QString("restore audio enable on startUp: ")+(bAudioEnableOnStartup? "true":"false"));
+    ui->checkBoxAudioEnableOnStartup->setChecked(bAudioEnableOnStartup);
 
     on_pushButton_refreshCom_clicked();
 
@@ -67,6 +71,8 @@ Dialog::Dialog(QWidget *parent) :
                 appendLogString(QString("com port %1 present. Try open.").arg(mainCom));
                 ui->comComboBox->setCurrentIndex(i);
                 on_pushButtonComOpen_clicked();
+                if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
+                    setAudioEnable(true);
                 //if(ui->checkBoxInitOnStart->isChecked()){
                 //    on_pushButtonInitiate_clicked();
                 //}
@@ -441,8 +447,7 @@ void Dialog::handleWdTimeout()
         wdNoClientsTimeSecs++;
         ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
         int wto = ui->lineEditWdTimeOutSecs->text().toInt();
-        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
-          on_pushButtonWDTest_clicked();
+        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){          
           appendLogString("watchdog: no clients in timeout. Try to restart unity build");
           restartUnityBuild();
           bUnityStarted = true;
@@ -570,4 +575,39 @@ QString Dialog::formatSize(qint64 size)
         outputSize= outputSize/1024;
     }
     return QString("%0 %1").arg(outputSize, 0, 'f', 2).arg(units[i]);
+}
+
+void Dialog::sendCmd(const char* s)
+{
+    if(serial.isOpen()){
+        QString debStr(s);
+        debStr.remove('\n');
+        qInfo("send: %s, sended %d", qPrintable(debStr), serial.write(s));
+    }
+}
+
+void Dialog::setAudioEnable(bool bEna)
+{
+    if(bEna){
+        sendCmd("audioOn\n");
+    }
+    else{
+        sendCmd("audioOff\n");
+    }
+}
+
+void Dialog::on_audioOn_clicked()
+{
+    setAudioEnable(true);
+}
+
+void Dialog::on_audioOff_clicked()
+{
+    setAudioEnable(false);
+}
+
+void Dialog::on_checkBoxAudioEnableOnStartup_clicked()
+{
+    settings.setValue("auidoEnableOnStartup", ui->checkBoxAudioEnableOnStartup->isChecked());
+
 }

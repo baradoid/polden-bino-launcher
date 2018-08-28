@@ -51,6 +51,8 @@ private:
 
     void restartUnityBuild();
     QString formatSize(qint64 size);
+    void setAudioEnable(bool);
+    void sendCmd(const char* s);
 
 private slots:
     void handleReadPendingDatagrams();
@@ -73,6 +75,9 @@ private slots:
     void on_lineEditLogPath_editingFinished();
     void on_pushButtonLogSelectPath_clicked();
     void on_checkBoxLogClearIfSizeExceed_clicked();
+    void on_audioOn_clicked();
+    void on_audioOff_clicked();
+    void on_checkBoxAudioEnableOnStartup_clicked();
 };
 
 #endif // DIALOG_H
