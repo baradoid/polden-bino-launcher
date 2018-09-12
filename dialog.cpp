@@ -113,8 +113,13 @@ Dialog::Dialog(QWidget *parent) :
 
     ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(10,999, this));
     QString wdTo = settings.value("watchdog/timeout", 10).toString();
-    appendLogString(QString("restore watchdog time out:\"")+(wdTo.isEmpty()? "n/a":wdTo)+ "\"");
+    appendLogString(QString("WD:restore watchdog time out:\"")+(wdTo.isEmpty()? "n/a":wdTo)+ "\"");
     ui->lineEditWdTimeOutSecs->setText(wdTo);
+
+    ui->lineEditFpsLimit->setValidator(new QIntValidator(10,999, this));
+    QString fpsLimit = settings.value("watchdog/timeout", 30).toString();
+    appendLogString(QString("WD:restore fps limit:\"")+(fpsLimit.isEmpty()? "n/a":fpsLimit)+ "\"");
+    ui->lineEditFpsLimit->setText(fpsLimit);
 
     connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
     wdTimer.setInterval(1000);
