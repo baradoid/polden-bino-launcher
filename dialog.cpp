@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QHostInfo>
 #include <QDesktopWidget>
+#include <QScreen>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
@@ -39,9 +40,42 @@ Dialog::Dialog(QWidget *parent) :
     appendLogFileString("--- start");
     appendLogString(QString("restore log dir:\"")+(logDirPath.isEmpty()? "n/a":logDirPath)+ "\"");
 
+    ui->lineEditHostName->setText(hostName);
+    appendLogString(QString("hostname: \"") + hostName + "\"");
 
-    QRect scrRect = QApplication::desktop()->screenGeometry();
-    appendLogString(QString("hostname: \"") + hostName + "\", " + QString("resolution:%1x%2").arg(scrRect.width()).arg(scrRect.height()));
+    QList<QScreen*> screens = QGuiApplication::screens();
+    QSize scrSize = QSize(0,0);
+    if(screens.isEmpty() == false){
+        scrSize = screens[0]->size();
+        screens[0]->orientation();
+        ui->lineEditScreenResolutionW->setText(QString::number(scrSize.width()));
+        ui->lineEditScreenResolutionH->setText(QString::number(scrSize.height()));
+        Qt::ScreenOrientation scrOr = screens[0]->orientation();
+        QString orStr;
+        switch(scrOr){
+            case Qt::PrimaryOrientation:
+                orStr = "PrimaryOrientation";
+                break;
+            case Qt::PortraitOrientation:
+                orStr = "PortraitOrientation";
+                break;
+            case Qt::LandscapeOrientation:
+                orStr = "LandscapeOrientation";
+                break;
+            case Qt::InvertedPortraitOrientation:
+                orStr = "InvertedPortraitOrientation";
+                break;
+            case Qt::InvertedLandscapeOrientation:
+                orStr = "InvertedLandscapeOrientation";
+                break;
+        }
+        ui->lineEditOrientation->setText(orStr);
+        appendLogString(QString("resolution:%1x%2 ").arg(scrSize.width()).arg(scrSize.height()) + orStr);
+    }
+    else{
+        appendLogString("No available screens");
+    }
+
 
     udpSocket = new QUdpSocket(this);
     if(udpSocket->bind(8050)){
