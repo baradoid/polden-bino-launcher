@@ -8,6 +8,7 @@
 #include <QHostInfo>
 #include <QDesktopWidget>
 #include <QScreen>
+#include <QDesktopServices>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
@@ -20,6 +21,7 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);    
 
+    startTime.start();
     QString compileDateTime = QString(__DATE__) + " " + QString(__TIME__);
     ui->label_buildTime->setText(compileDateTime);
 
@@ -183,6 +185,7 @@ Dialog::~Dialog()
     settings.setValue("usbMain", comName);
     settings.setValue("rangeThresh", rangeThresh);
 
+    appendLogString("--- quit");
     delete ui;
 }
 
@@ -554,6 +557,19 @@ void Dialog::handleWdTimeout()
     }
     //qDebug("wd");
 
+    //QString uptimeStr = QString::number();
+    QTime tempTime(0,0,0,0);
+
+    int s = startTime.elapsed()/1000;
+    int ss = s%60;
+    int m = (s/60)%60;
+    int h = (s/3600);
+
+    QString tStr;
+    tStr.sprintf("%02d:%02d:%02d", h,m,ss);
+    ui->lineEditUptime->setText(tStr);
+
+
 }
 
 void Dialog::on_checkBoxWdEnable_clicked(bool checked)
@@ -593,6 +609,15 @@ void Dialog::appendLogFileString(QString logString)
     QString pathStr = ui->lineEditLogPath->text();
     if(QDir().mkpath(pathStr) == true){
 
+        QString logFileName = QDate::currentDate().toString("yyyy-MM-dd")+".txt";
+        pathStr + logFileName;
+        //qDebug() << "creates path ok " << qPrintable(pathStr + "/" + logFileName);
+        QFile f(pathStr + "/" + logFileName);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            f.write(qPrintable(logString + "\r\n"));
+            f.close();
+        }
+
         qint64 size = 0;
         QDir dir(pathStr);
         //calculate total size of current directories' files
@@ -613,16 +638,6 @@ void Dialog::appendLogFileString(QString logString)
                 qDebug() << "remove file" << dir.absoluteFilePath(logFiles[0]) << QFile(dir.absoluteFilePath(logFiles[0])).remove();
         }
 
-
-
-        QString logFileName = QDate::currentDate().toString("yyyy-MM-dd")+".txt";
-        pathStr + logFileName;
-        //qDebug() << "creates path ok " << qPrintable(pathStr + "/" + logFileName);
-        QFile f(pathStr + "/" + logFileName);
-        if (f.open(QIODevice::WriteOnly | QIODevice::Append)) {
-            f.write(qPrintable(logString + "\r\n"));
-            f.close();
-        }
     }
 }
 
@@ -701,5 +716,14 @@ void Dialog::on_audioOff_clicked()
 void Dialog::on_checkBoxAudioEnableOnStartup_clicked()
 {
     settings.setValue("auidoEnableOnStartup", ui->checkBoxAudioEnableOnStartup->isChecked());
+
+}
+
+void Dialog::on_pushButton_clicked()
+{
+    QString pathStr = ui->lineEditLogPath->text();
+    if(QDir().mkpath(pathStr) == true){
+        QDesktopServices::openUrl(QUrl::fromLocalFile(pathStr));
+    }
 
 }

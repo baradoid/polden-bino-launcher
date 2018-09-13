@@ -53,6 +53,7 @@ private:
     QString formatSize(qint64 size);
     void setAudioEnable(bool);
     void sendCmd(const char* s);
+    QTime startTime;
 
 private slots:
     void handleReadPendingDatagrams();
@@ -78,6 +79,7 @@ private slots:
     void on_audioOn_clicked();
     void on_audioOff_clicked();
     void on_checkBoxAudioEnableOnStartup_clicked();
+    void on_pushButton_clicked();
 };
 
 #endif // DIALOG_H
