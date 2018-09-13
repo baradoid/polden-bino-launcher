@@ -10,6 +10,12 @@
     <height>700</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="minimumSize">
    <size>
     <width>530</width>
@@ -286,7 +292,7 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>270</x>
      <y>190</y>
      <width>251</width>
      <height>81</height>
@@ -399,7 +405,7 @@
   <widget class="QGroupBox" name="groupBox_5">
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>10</x>
      <y>190</y>
      <width>251</width>
      <height>81</height>
@@ -550,7 +556,7 @@
    <widget class="QLineEdit" name="lineEditWdTimeOutSecs">
     <property name="geometry">
      <rect>
-      <x>230</x>
+      <x>250</x>
       <y>50</y>
       <width>31</width>
       <height>20</height>
@@ -568,18 +574,18 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>221</width>
+      <width>231</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Перезапустить при отсутствии клиентов</string>
+     <string>Перезапустить при отсутствии подключения</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_13">
     <property name="geometry">
      <rect>
-      <x>270</x>
+      <x>280</x>
       <y>50</y>
       <width>181</width>
       <height>16</height>
@@ -605,20 +611,20 @@
    <widget class="QLabel" name="label_wd_noclients">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>250</x>
       <y>20</y>
-      <width>71</width>
-      <height>16</height>
+      <width>101</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Клиентов нет</string>
+     <string>Подключения нет</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEdit_wdNoClientsTimer">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>350</x>
       <y>20</y>
       <width>31</width>
       <height>20</height>
@@ -637,10 +643,10 @@
    <widget class="QLabel" name="label_wd_noclients_2">
     <property name="geometry">
      <rect>
-      <x>180</x>
+      <x>390</x>
       <y>20</y>
-      <width>51</width>
-      <height>16</height>
+      <width>31</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="text">
@@ -743,10 +749,10 @@
           </size>
          </property>
          <property name="text">
-          <string>   </string>
+          <string/>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="resources.qrc">
            <normaloff>:/res/images/folderopenicon.png</normaloff>:/res/images/folderopenicon.png</iconset>
          </property>
         </widget>
@@ -1212,6 +1218,8 @@
   <zorder>groupBox_9</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

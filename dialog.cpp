@@ -22,6 +22,7 @@ Dialog::Dialog(QWidget *parent) :
     ui->setupUi(this);    
 
     startTime.start();
+    updateUptime();
     QString compileDateTime = QString(__DATE__) + " " + QString(__TIME__);
     ui->label_buildTime->setText(compileDateTime);
 
@@ -557,19 +558,7 @@ void Dialog::handleWdTimeout()
     }
     //qDebug("wd");
 
-    //QString uptimeStr = QString::number();
-    QTime tempTime(0,0,0,0);
-
-    int s = startTime.elapsed()/1000;
-    int ss = s%60;
-    int m = (s/60)%60;
-    int h = (s/3600);
-
-    QString tStr;
-    tStr.sprintf("%02d:%02d:%02d", h,m,ss);
-    ui->lineEditUptime->setText(tStr);
-
-
+    updateUptime();
 }
 
 void Dialog::on_checkBoxWdEnable_clicked(bool checked)
@@ -726,4 +715,16 @@ void Dialog::on_pushButton_clicked()
         QDesktopServices::openUrl(QUrl::fromLocalFile(pathStr));
     }
 
+}
+
+void Dialog::updateUptime()
+{
+    int s = startTime.elapsed()/1000;
+    int ss = s%60;
+    int m = (s/60)%60;
+    int h = (s/3600);
+
+    QString tStr;
+    tStr.sprintf("%02d:%02d:%02d", h,m,ss);
+    ui->lineEditUptime->setText(tStr);
 }

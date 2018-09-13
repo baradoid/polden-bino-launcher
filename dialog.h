@@ -54,6 +54,7 @@ private:
     void setAudioEnable(bool);
     void sendCmd(const char* s);
     QTime startTime;
+    void updateUptime();
 
 private slots:
     void handleReadPendingDatagrams();
