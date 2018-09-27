@@ -677,7 +677,7 @@ void Dialog::sendCmd(const char* s)
     if(serial.isOpen()){
         QString debStr(s);
         debStr.remove('\n');
-        //qInfo("send: %s, sended %d", qPrintable(debStr), serial.write(s));
+        qInfo("send: %s, sended %d", qPrintable(debStr), serial.write(s));
     }
 }
 
