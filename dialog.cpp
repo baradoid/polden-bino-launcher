@@ -9,6 +9,7 @@
 #include <QDesktopWidget>
 #include <QScreen>
 #include <QDesktopServices>
+#include <windows.h>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
@@ -178,6 +179,11 @@ Dialog::Dialog(QWidget *parent) :
     //ui->tableWidgetClients->resizeColumnsToContents();
     ui->tableWidgetClients->setColumnCount(4);
     ui->tableWidgetClients->resizeColumnsToContents();
+
+    connect(&logUpdateTimer, SIGNAL(timeout()), this, SLOT(handleLogUpdateTimeout()));
+    logUpdateTimer.setInterval(30*1000);
+    logUpdateTimer.start();
+
 }
 
 Dialog::~Dialog()
@@ -558,6 +564,7 @@ void Dialog::handleWdTimeout()
     }
     //qDebug("wd");
 
+
     updateUptime();
 }
 
@@ -723,8 +730,27 @@ void Dialog::updateUptime()
     int ss = s%60;
     int m = (s/60)%60;
     int h = (s/3600);
+    int d = (s/(3600*24));
 
     QString tStr;
-    tStr.sprintf("%02d:%02d:%02d", h,m,ss);
+    tStr.sprintf("%02d:%02d:%02d:%02d", d,h,m,ss);
     ui->lineEditUptime->setText(tStr);
+
+
+    s = GetTickCount()/1000;
+    ss = s%60;
+    m = (s/60)%60;
+    h = (s/3600);
+    d = (s/(3600*24));
+
+    tStr.sprintf("%02d:%02d:%02d:%02d", d,h,m,ss);
+    ui->lineEditSysUptime->setText(tStr);
+}
+
+void Dialog::handleLogUpdateTimeout()
+{
+    QString curTime = QTime::currentTime().toString();
+    QString logString = curTime + ">" + "still alive";
+
+    appendLogFileString(logString);
 }

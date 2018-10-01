@@ -42,7 +42,7 @@ private:
 
     void processStr(QString str);
 
-    QTimer wdTimer;
+    QTimer wdTimer, logUpdateTimer;
     int wdNoClientsTimeSecs;
     bool bUnityStarted;
 
@@ -81,6 +81,8 @@ private slots:
     void on_audioOff_clicked();
     void on_checkBoxAudioEnableOnStartup_clicked();
     void on_pushButton_clicked();
+
+    void handleLogUpdateTimeout();
 };
 
 #endif // DIALOG_H
