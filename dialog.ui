@@ -572,7 +572,7 @@ zero</string>
      </size>
     </property>
     <property name="checkable">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QCheckBox" name="checkBoxRangeAlwaysOn">

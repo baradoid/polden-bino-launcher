@@ -196,6 +196,9 @@ Dialog::Dialog(QWidget *parent) :
     ui->checkBoxRangeAlwaysOn->setChecked(settings.value("rangeAlwaysOn", false).toBool());
 
     ui->lineEditRangeTreshExceedCount->setText("0");
+
+    ui->checkBoxThreshExcess->setAttribute(Qt::WA_TransparentForMouseEvents);
+    ui->checkBoxThreshExcess->setFocusPolicy(Qt::NoFocus);
 }
 
 Dialog::~Dialog()
@@ -470,8 +473,11 @@ void Dialog::processStr(QString str)
         ui->lineEditRange->setText(QString::number(dist));
         //ui->lineEditTerm1->setText(QString::number(temp));
         //qDebug() << xPos1 << xPos2;
+
+        rangeThresh = ui->lineEditRangeThresh->text().toInt();
         ui->checkBoxThreshExcess->setChecked(dist<rangeThresh);
 
+        //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
         enc1Val = xPos1;
         enc2Val = xPos2;
         distVal = dist;
@@ -656,11 +662,12 @@ void Dialog::restartUnityBuild()
     else{
         appendLogString("kill \"VR.exe\" ... FAIL");
     }
-    QString str = ui->lineEditBuildPath->text();
+    QString str = ui->lineEditBuildPath->text();    
     if(str.isEmpty() == true){
         appendLogString("Path empty. Nothing to start.");
         return;
     }
+    str = "\"" + str + "\"";
     if(p.startDetached(str)){
         appendLogString(QString("start \"") + str + "\" ... OK");
     }
