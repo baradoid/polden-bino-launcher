@@ -107,41 +107,12 @@
    <property name="title">
     <string>Подключение к кроссплате</string>
    </property>
-   <widget class="QLabel" name="label_6">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>80</y>
-      <width>31</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Temp</string>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="lineEditEnc1">
     <property name="geometry">
      <rect>
-      <x>50</x>
+      <x>40</x>
       <y>50</y>
-      <width>71</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditRange_2">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>80</y>
-      <width>71</width>
+      <width>61</width>
       <height>20</height>
      </rect>
     </property>
@@ -156,13 +127,16 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>51</y>
       <width>31</width>
-      <height>16</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>xPos</string>
+     <string>enc1</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="label_4">
@@ -171,19 +145,22 @@
       <x>10</x>
       <y>80</y>
       <width>31</width>
-      <height>16</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>yPos</string>
+     <string>enc2</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEditEnc2">
     <property name="geometry">
      <rect>
-      <x>50</x>
+      <x>40</x>
       <y>80</y>
-      <width>71</width>
+      <width>61</width>
       <height>20</height>
      </rect>
     </property>
@@ -230,6 +207,84 @@
      <string>refresh</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="lineEditEnc1Offset">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>50</y>
+      <width>61</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditEnc2Offset">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>80</y>
+      <width>61</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_26">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>51</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>off1</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_27">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>81</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>off2</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonEncSetZero">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>50</y>
+      <width>41</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>set
+zero</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
@@ -237,19 +292,19 @@
      <x>10</x>
      <y>120</y>
      <width>251</width>
-     <height>71</height>
+     <height>81</height>
     </rect>
    </property>
    <property name="title">
-    <string>Настройки</string>
+    <string>Температура корпуса</string>
    </property>
    <widget class="QLineEdit" name="lineEditRangeThresh_2">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>20</y>
+      <y>50</y>
       <width>61</width>
-      <height>20</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="alignment">
@@ -263,7 +318,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>20</y>
+      <y>50</y>
       <width>171</width>
       <height>21</height>
      </rect>
@@ -276,13 +331,42 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>40</y>
+      <y>20</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Установить</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditRange_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>21</y>
+      <width>61</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>20</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Temp</string>
     </property>
    </widget>
   </widget>
@@ -406,7 +490,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>190</y>
+     <y>200</y>
      <width>251</width>
      <height>81</height>
     </rect>

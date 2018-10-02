@@ -40,6 +40,10 @@ private:
 
     uint16_t rangeThresh;
 
+    uint16_t enc1Val, enc2Val;
+    uint16_t enc1Offset, enc2Offset;
+    int distVal;
+
     void processStr(QString str);
 
     QTimer wdTimer, logUpdateTimer;
@@ -55,6 +59,8 @@ private:
     void sendCmd(const char* s);
     QTime startTime;
     void updateUptime();
+
+    void sendPosData();
 
 private slots:
     void handleReadPendingDatagrams();
@@ -83,6 +89,7 @@ private slots:
     void on_pushButton_clicked();
 
     void handleLogUpdateTimeout();
+    void on_pushButtonEncSetZero_clicked();
 };
 
 #endif // DIALOG_H

@@ -17,7 +17,9 @@ Dialog::Dialog(QWidget *parent) :
     enc1(0),enc2(0),r(0),
     settings("bino-settings.ini", QSettings::IniFormat),
     wdNoClientsTimeSecs(0),
-    bUnityStarted(false)
+    bUnityStarted(false),
+    enc1Val(0), enc2Val(0),
+    enc1Offset(0), enc2Offset(0)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -184,6 +186,10 @@ Dialog::Dialog(QWidget *parent) :
     logUpdateTimer.setInterval(30*1000);
     logUpdateTimer.start();
 
+    enc1Offset = settings.value("enc1Offset", 0).toInt();
+    ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+    enc2Offset = settings.value("enc2Offset", 0).toInt();
+    ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
 }
 
 Dialog::~Dialog()
@@ -458,18 +464,14 @@ void Dialog::processStr(QString str)
         ui->lineEditRange->setText(QString::number(dist));
         //ui->lineEditTerm1->setText(QString::number(temp));
         //qDebug() << xPos1 << xPos2;
-
-        CbDataUdp cbdata;
-        cbdata.pos1 = (int16_t)xPos1;
-        cbdata.pos2 = (int16_t)xPos2;
-        //cbdata.distance = (int16_t)dist;
-        cbdata.rangeThresh = (int)(dist<rangeThresh);
         ui->checkBoxThreshExcess->setChecked(dist<rangeThresh);
 
-        for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-            TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-            udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
-        }
+        enc1Val = xPos1;
+        enc2Val = xPos2;
+        distVal = dist;
+
+        sendPosData();
+
     }
 
     //appendPosToGraph(xPos);
@@ -753,4 +755,31 @@ void Dialog::handleLogUpdateTimeout()
     QString logString = curTime + ">" + "still alive";
 
     appendLogFileString(logString);
+}
+
+void Dialog::on_pushButtonEncSetZero_clicked()
+{
+    enc1Offset = enc1Val;
+    settings.setValue("enc1Offset", enc1Offset);
+    ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+
+    enc2Offset = enc2Val;
+    settings.setValue("enc2Offset", enc2Offset);
+    ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
+
+    sendPosData();
+}
+
+void Dialog::sendPosData()
+{
+    CbDataUdp cbdata;
+    cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
+    cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+    //cbdata.distance = (int16_t)dist;
+    cbdata.rangeThresh = (int)(distVal<rangeThresh);
+
+    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
+        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
+    }
 }
