@@ -43,6 +43,10 @@ private:
     uint16_t enc1Val, enc2Val;
     uint16_t enc1Offset, enc2Offset;
     int distVal;
+    bool lastDistTreshState;
+
+    int distanceOverThreshCnt;
+
 
     void processStr(QString str);
 
@@ -90,6 +94,7 @@ private slots:
 
     void handleLogUpdateTimeout();
     void on_pushButtonEncSetZero_clicked();
+    void on_checkBoxRangeAlwaysOn_clicked(bool checked);
 };
 
 #endif // DIALOG_H

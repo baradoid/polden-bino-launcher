@@ -19,7 +19,9 @@ Dialog::Dialog(QWidget *parent) :
     wdNoClientsTimeSecs(0),
     bUnityStarted(false),
     enc1Val(0), enc2Val(0),
-    enc1Offset(0), enc2Offset(0)
+    enc1Offset(0), enc2Offset(0),
+    distanceOverThreshCnt(0),
+    lastDistTreshState(false)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -190,6 +192,10 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
     enc2Offset = settings.value("enc2Offset", 0).toInt();
     ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
+
+    ui->checkBoxRangeAlwaysOn->setChecked(settings.value("rangeAlwaysOn", false).toBool());
+
+    ui->lineEditRangeTreshExceedCount->setText("0");
 }
 
 Dialog::~Dialog()
@@ -752,7 +758,7 @@ void Dialog::updateUptime()
 void Dialog::handleLogUpdateTimeout()
 {
     QString curTime = QTime::currentTime().toString();
-    QString logString = curTime + ">" + "still alive";
+    QString logString = curTime + ">" + "still alive, threshExceedCount: " + QString::number(distanceOverThreshCnt);
 
     appendLogFileString(logString);
 }
@@ -776,10 +782,24 @@ void Dialog::sendPosData()
     cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
     cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
     //cbdata.distance = (int16_t)dist;
-    cbdata.rangeThresh = (int)(distVal<rangeThresh);
+    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ? true : distVal<rangeThresh;
+    cbdata.rangeThresh = (int) (distThreshExceed);
+
+    if((distThreshExceed == true) && (lastDistTreshState == false)){
+        distanceOverThreshCnt ++ ;
+        ui->lineEditRangeTreshExceedCount->setText(QString::number(distanceOverThreshCnt));
+    }
+    lastDistTreshState = distThreshExceed;
+
 
     for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
         TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
         udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
     }
+}
+
+void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
+{
+    settings.setValue("rangeAlwaysOn", checked);
+    sendPosData();
 }
