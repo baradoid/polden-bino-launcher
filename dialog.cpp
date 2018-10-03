@@ -193,7 +193,8 @@ Dialog::Dialog(QWidget *parent) :
     enc2Offset = settings.value("enc2Offset", 0).toInt();
     ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
 
-    ui->checkBoxRangeAlwaysOn->setChecked(settings.value("rangeAlwaysOn", false).toBool());
+    //ui->checkBoxRangeAlwaysOn->setChecked(settings.value("rangeAlwaysOn", false).toBool());
+    ui->checkBoxRangeAlwaysOn->setChecked(false);
 
     ui->lineEditRangeTreshExceedCount->setText("0");
 
@@ -475,7 +476,7 @@ void Dialog::processStr(QString str)
         //qDebug() << xPos1 << xPos2;
 
         rangeThresh = ui->lineEditRangeThresh->text().toInt();
-        ui->checkBoxThreshExcess->setChecked(dist<rangeThresh);
+
 
         //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
         enc1Val = xPos1;
@@ -789,8 +790,10 @@ void Dialog::sendPosData()
     cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
     cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
     //cbdata.distance = (int16_t)dist;
-    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ? true : distVal<rangeThresh;
+    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(distVal<rangeThresh);
     cbdata.rangeThresh = (int) (distThreshExceed);
+
+    ui->checkBoxThreshExcess->setChecked(distThreshExceed);
 
     if((distThreshExceed == true) && (lastDistTreshState == false)){
         distanceOverThreshCnt ++ ;
@@ -807,6 +810,6 @@ void Dialog::sendPosData()
 
 void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
 {
-    settings.setValue("rangeAlwaysOn", checked);
+    //settings.setValue("rangeAlwaysOn", checked);
     sendPosData();
 }
