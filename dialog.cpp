@@ -346,16 +346,13 @@ void Dialog::hbTimerOut()
 
 }
 
+#pragma pack(push,1)
 typedef struct{
-    int16_t pos1;
-    int16_t pos2;
-    uint16_t rangeThresh:1;
-    //int16_t distance;
-//    int8_t headTemp;
-//    int8_t batteryTemp;
-//    int32_t cashCount;
+    uint16_t pos1;
+    uint16_t pos2;
+    uint8_t rangeThresh;
 } CbDataUdp;
-
+#pragma pack(pop)
 
 void Dialog::debugTimerOut()
 {
@@ -791,7 +788,7 @@ void Dialog::sendPosData()
     cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
     //cbdata.distance = (int16_t)dist;
     bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(distVal<rangeThresh);
-    cbdata.rangeThresh = (int) (distThreshExceed);
+    cbdata.rangeThresh = distThreshExceed? 1:0;
 
     ui->checkBoxThreshExcess->setChecked(distThreshExceed);
 
@@ -804,6 +801,7 @@ void Dialog::sendPosData()
 
     for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
         TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
+        //qInfo() << sizeof(CbDataUdp);
         udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
     }
 }
