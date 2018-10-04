@@ -8,10 +8,33 @@
 #include <QSerialPort>
 #include <QTime>
 #include <QSettings>
+#include <QButtonGroup>
+#include <QTableWidgetItem>
 
 namespace Ui {
 class Dialog;
 }
+
+class QWidgetCust : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit QWidgetCust(QWidget *parent = 0){
+
+    }
+    ~QWidgetCust(){
+
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent * event){
+        //qInfo("mousePressEvent");
+        emit mousePressedSignal();
+    };
+
+signals:
+    void mousePressedSignal();
+};
 
 class Dialog : public QDialog
 {
@@ -47,6 +70,12 @@ private:
 
     int distanceOverThreshCnt;
 
+    QButtonGroup *horEncSelectBG;
+    QTableWidgetItem *leEnc1, *leEnc2;
+    QTableWidgetItem *leEnc1Off, *leEnc2Off;
+
+
+    void initEncTableWidget();
 
     void processStr(QString str);
 
@@ -65,6 +94,8 @@ private:
     void updateUptime();
 
     void sendPosData();
+
+
 
 private slots:
     void handleReadPendingDatagrams();
@@ -94,7 +125,7 @@ private slots:
 
     void handleLogUpdateTimeout();
     void on_pushButtonEncSetZero_clicked();
-    void on_checkBoxRangeAlwaysOn_clicked(bool checked);
+    void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
 };
 
 #endif // DIALOG_H

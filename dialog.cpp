@@ -10,6 +10,7 @@
 #include <QScreen>
 #include <QDesktopServices>
 #include <windows.h>
+#include <QRadioButton>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
@@ -139,8 +140,6 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditRangeThresh->setValidator( new QIntValidator(0, 100, this) );
     ui->lineEditRangeThresh->setText(QString::number(rangeThresh));
 
-    ui->lineEditEnc1->setText("n/a");
-    ui->lineEditEnc2->setText("n/a");
     ui->lineEditRange->setText("n/a");
     ui->lineEditRange_2->setText("n/a");
 
@@ -188,10 +187,6 @@ Dialog::Dialog(QWidget *parent) :
     logUpdateTimer.setInterval(30*1000);
     logUpdateTimer.start();
 
-    enc1Offset = settings.value("enc1Offset", 0).toInt();
-    ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
-    enc2Offset = settings.value("enc2Offset", 0).toInt();
-    ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
 
     //ui->checkBoxRangeAlwaysOn->setChecked(settings.value("rangeAlwaysOn", false).toBool());
     ui->checkBoxRangeAlwaysOn->setChecked(false);
@@ -200,7 +195,12 @@ Dialog::Dialog(QWidget *parent) :
 
     ui->checkBoxThreshExcess->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->checkBoxThreshExcess->setFocusPolicy(Qt::NoFocus);
+
+    initEncTableWidget();
+
+
 }
+
 
 Dialog::~Dialog()
 {
@@ -219,6 +219,91 @@ typedef struct{
     QTime lastHbaRecvd;
     bool bHbaRecvd;
 } TSenderInfo;
+
+void Dialog::initEncTableWidget()
+{
+    ui->tableWidgetEncoders->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableWidgetEncoders->setHorizontalHeaderLabels(QStringList() << "val" << "offset" << "horiz");
+    ui->tableWidgetEncoders->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    //
+    //ui->tableWidgetEncoders->setCellWidget(0,3, new QRadioButton());
+    //ui->tableWidgetEncoders->item(0, 3)->setTextAlignment(Qt::AlignHCenter);
+
+    horEncSelectBG = new QButtonGroup();
+    horEncSelectBG->addButton(new QRadioButton(), 0);
+    horEncSelectBG->addButton(new QRadioButton(), 1);
+
+    connect(horEncSelectBG, QOverload<int>::of(&QButtonGroup::buttonClicked),
+        [=](int id){
+        settings.setValue("hozEncId", id);
+    });
+
+
+
+
+    QWidget * w = new QWidgetCust();
+    QHBoxLayout *l = new QHBoxLayout();
+    l->setAlignment( Qt::AlignCenter );
+    l->addWidget( horEncSelectBG->button(0) );
+    w->setLayout( l );
+    ui->tableWidgetEncoders->setCellWidget(0,2, w);
+
+    connect(((QWidgetCust*)w), &QWidgetCust::mousePressedSignal, [=](){
+        ((QRadioButton*)horEncSelectBG->button(0))->setChecked(true);
+    });
+
+
+    w = new QWidgetCust();
+    l = new QHBoxLayout();
+    l->setAlignment( Qt::AlignCenter );
+    l->addWidget( horEncSelectBG->button(1) );
+    w->setLayout( l );
+    //connect(w, SIGNAL())
+    ui->tableWidgetEncoders->setCellWidget(1, 2, w);
+
+    connect(((QWidgetCust*)w), &QWidgetCust::mousePressedSignal, [=](){
+        ((QRadioButton*)horEncSelectBG->button(1))->setChecked(true);
+    });
+
+    int defEncId = settings.value("hozEncId", 0).toInt();
+    ((QRadioButton*)horEncSelectBG->button(defEncId))->setChecked(true);
+
+
+    leEnc1 = new QTableWidgetItem;
+    leEnc2 = new QTableWidgetItem;
+    leEnc1Off = new QTableWidgetItem;
+    leEnc2Off = new QTableWidgetItem;
+
+    QList<QTableWidgetItem*> wList;
+    wList.append(leEnc1);
+    wList.append(leEnc2);
+    wList.append(leEnc1Off);
+    wList.append(leEnc2Off);
+
+    foreach (QTableWidgetItem* twl, wList) {
+        twl->setTextAlignment(Qt::AlignCenter);
+        twl->setText("n/a");
+    }
+
+
+    //ui->lineEditEnc1->setText("n/a");
+    //ui->lineEditEnc2->setText("n/a");
+
+    enc1Offset = settings.value("enc1Offset", 0).toInt();
+    //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+    leEnc1Off->setText(QString::number(enc1Offset));
+
+    enc2Offset = settings.value("enc2Offset", 0).toInt();
+    //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
+    leEnc2Off->setText(QString::number(enc2Offset));
+
+    ui->tableWidgetEncoders->setItem(0, 0, leEnc1);
+    ui->tableWidgetEncoders->setItem(1, 0, leEnc2);
+    ui->tableWidgetEncoders->setItem(0, 1, leEnc1Off);
+    ui->tableWidgetEncoders->setItem(1, 1, leEnc2Off);
+
+}
 
 void Dialog::handleReadPendingDatagrams()
 {
@@ -365,8 +450,8 @@ void Dialog::debugTimerOut()
     cbdata.pos2 = enc2;
     //cbdata.distance = 12;
 
-    ui->lineEditEnc1->setText(QString::number(enc1));
-    ui->lineEditEnc2->setText(QString::number(enc2));
+    //ui->lineEditEnc1->setText(QString::number(enc1));
+    //ui->lineEditEnc2->setText(QString::number(enc2));
     //ui->lineEditRange->setText(QString::number(cbdata.distance));
 
     for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
@@ -466,8 +551,10 @@ void Dialog::processStr(QString str)
         int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
         int dist = strList[2].toInt(Q_NULLPTR, 10);
         //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
-        ui->lineEditEnc1->setText(QString::number(xPos1));
-        ui->lineEditEnc2->setText(QString::number(xPos2));
+        //ui->lineEditEnc1->setText(QString::number(xPos1));
+        leEnc1->setText(QString::number(xPos1));
+        //ui->lineEditEnc2->setText(QString::number(xPos2));
+        leEnc2->setText(QString::number(xPos2));
         ui->lineEditRange->setText(QString::number(dist));
         //ui->lineEditTerm1->setText(QString::number(temp));
         //qDebug() << xPos1 << xPos2;
@@ -739,10 +826,10 @@ void Dialog::on_pushButton_clicked()
 
 void Dialog::updateUptime()
 {
-    int s = startTime.elapsed()/1000;
+    uint64_t s = startTime.elapsed()/1000;
     int ss = s%60;
     int m = (s/60)%60;
-    int h = (s/3600);
+    int h = (s/3600)%24;
     int d = (s/(3600*24));
 
     QString tStr;
@@ -753,7 +840,7 @@ void Dialog::updateUptime()
     s = GetTickCount()/1000;
     ss = s%60;
     m = (s/60)%60;
-    h = (s/3600);
+    h = (s/3600)%24;
     d = (s/(3600*24));
 
     tStr.sprintf("%02d:%02d:%02d:%02d", d,h,m,ss);
@@ -772,11 +859,13 @@ void Dialog::on_pushButtonEncSetZero_clicked()
 {
     enc1Offset = enc1Val;
     settings.setValue("enc1Offset", enc1Offset);
-    ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+    //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+    leEnc1Off->setText(QString::number(enc1Offset));
 
     enc2Offset = enc2Val;
     settings.setValue("enc2Offset", enc2Offset);
-    ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
+    //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
+    leEnc2Off->setText(QString::number(enc2Offset));
 
     sendPosData();
 }
@@ -784,8 +873,14 @@ void Dialog::on_pushButtonEncSetZero_clicked()
 void Dialog::sendPosData()
 {
     CbDataUdp cbdata;
-    cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
-    cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+    if(horEncSelectBG->checkedId() == 0){
+        cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+    }
+    else if(horEncSelectBG->checkedId() == 1){
+        cbdata.pos2 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
+        cbdata.pos1 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+    }
     //cbdata.distance = (int16_t)dist;
     bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(distVal<rangeThresh);
     cbdata.rangeThresh = distThreshExceed? 1:0;
