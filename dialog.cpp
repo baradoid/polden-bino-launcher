@@ -236,10 +236,8 @@ void Dialog::initEncTableWidget()
 
     connect(horEncSelectBG, QOverload<int>::of(&QButtonGroup::buttonClicked),
         [=](int id){
-        settings.setValue("hozEncId", id);
+        settings.setValue("encoders/hozEncId", id);
     });
-
-
 
 
     QWidget * w = new QWidgetCust();
@@ -251,6 +249,7 @@ void Dialog::initEncTableWidget()
 
     connect(((QWidgetCust*)w), &QWidgetCust::mousePressedSignal, [=](){
         ((QRadioButton*)horEncSelectBG->button(0))->setChecked(true);
+        settings.setValue("encoders/hozEncId", 0);
     });
 
 
@@ -264,9 +263,10 @@ void Dialog::initEncTableWidget()
 
     connect(((QWidgetCust*)w), &QWidgetCust::mousePressedSignal, [=](){
         ((QRadioButton*)horEncSelectBG->button(1))->setChecked(true);
+        settings.setValue("encoders/hozEncId", 1);
     });
 
-    int defEncId = settings.value("hozEncId", 0).toInt();
+    int defEncId = settings.value("encoders/hozEncId", 0).toInt();
     ((QRadioButton*)horEncSelectBG->button(defEncId))->setChecked(true);
 
 
@@ -290,11 +290,11 @@ void Dialog::initEncTableWidget()
     //ui->lineEditEnc1->setText("n/a");
     //ui->lineEditEnc2->setText("n/a");
 
-    enc1Offset = settings.value("enc1Offset", 0).toInt();
+    enc1Offset = settings.value("encoders/enc1Offset", 0).toInt();
     //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
     leEnc1Off->setText(QString::number(enc1Offset));
 
-    enc2Offset = settings.value("enc2Offset", 0).toInt();
+    enc2Offset = settings.value("encoders/enc2Offset", 0).toInt();
     //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
     leEnc2Off->setText(QString::number(enc2Offset));
 
@@ -858,12 +858,12 @@ void Dialog::handleLogUpdateTimeout()
 void Dialog::on_pushButtonEncSetZero_clicked()
 {
     enc1Offset = enc1Val;
-    settings.setValue("enc1Offset", enc1Offset);
+    settings.setValue("encoders/enc1Offset", enc1Offset);
     //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
     leEnc1Off->setText(QString::number(enc1Offset));
 
     enc2Offset = enc2Val;
-    settings.setValue("enc2Offset", enc2Offset);
+    settings.setValue("encoders/enc2Offset", enc2Offset);
     //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
     leEnc2Off->setText(QString::number(enc2Offset));
 
