@@ -1244,7 +1244,7 @@
      <number>2</number>
     </property>
     <property name="columnCount">
-     <number>3</number>
+     <number>4</number>
     </property>
     <attribute name="horizontalHeaderCascadingSectionResizes">
      <bool>false</bool>
@@ -1263,6 +1263,7 @@
     </attribute>
     <row/>
     <row/>
+    <column/>
     <column/>
     <column/>
     <column/>

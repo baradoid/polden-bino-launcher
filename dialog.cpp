@@ -223,7 +223,7 @@ typedef struct{
 void Dialog::initEncTableWidget()
 {
     ui->tableWidgetEncoders->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tableWidgetEncoders->setHorizontalHeaderLabels(QStringList() << "val" << "offset" << "horiz");
+    ui->tableWidgetEncoders->setHorizontalHeaderLabels(QStringList() << "val" << "offset" << "horiz" << "inv");
     ui->tableWidgetEncoders->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     //
@@ -244,6 +244,7 @@ void Dialog::initEncTableWidget()
     QHBoxLayout *l = new QHBoxLayout();
     l->setAlignment( Qt::AlignCenter );
     l->addWidget( horEncSelectBG->button(0) );
+    l->setContentsMargins(0,0,0,0);
     w->setLayout( l );
     ui->tableWidgetEncoders->setCellWidget(0,2, w);
 
@@ -257,6 +258,7 @@ void Dialog::initEncTableWidget()
     l = new QHBoxLayout();
     l->setAlignment( Qt::AlignCenter );
     l->addWidget( horEncSelectBG->button(1) );
+    l->setContentsMargins(0,0,0,0);
     w->setLayout( l );
     //connect(w, SIGNAL())
     ui->tableWidgetEncoders->setCellWidget(1, 2, w);
@@ -302,6 +304,43 @@ void Dialog::initEncTableWidget()
     ui->tableWidgetEncoders->setItem(1, 0, leEnc2);
     ui->tableWidgetEncoders->setItem(0, 1, leEnc1Off);
     ui->tableWidgetEncoders->setItem(1, 1, leEnc2Off);
+
+
+    QWidget *checkBoxWidget = new QWidget();
+    checkEnc1Inv = new QCheckBox();      // We declare and initialize the checkbox
+    QHBoxLayout *layoutCheckBox = new QHBoxLayout(checkBoxWidget); // create a layer with reference to the widget
+    layoutCheckBox->addWidget(checkEnc1Inv);            // Set the checkbox in the layer
+    layoutCheckBox->setAlignment(Qt::AlignCenter);  // Center the checkbox
+    layoutCheckBox->setContentsMargins(0,0,0,0);    // Set the zero padding
+
+    checkEnc1Inv->setChecked(settings.value("encoders/enc1Inverse", false).toBool());
+
+    connect(checkEnc1Inv, &QCheckBox::clicked, [=](bool bChecked){ settings.setValue("encoders/enc1Inverse", bChecked); });
+    ui->tableWidgetEncoders->setCellWidget(0,3, checkBoxWidget);
+
+
+    checkBoxWidget = new QWidget();
+    checkEnc2Inv = new QCheckBox();      // We declare and initialize the checkbox
+    layoutCheckBox = new QHBoxLayout(checkBoxWidget); // create a layer with reference to the widget
+    layoutCheckBox->addWidget(checkEnc2Inv);            // Set the checkbox in the layer
+    layoutCheckBox->setAlignment(Qt::AlignCenter);  // Center the checkbox
+    layoutCheckBox->setContentsMargins(0,0,0,0);    // Set the zero padding
+
+    checkEnc2Inv->setChecked(settings.value("encoders/enc2Inverse", false).toBool());
+
+    connect(checkEnc2Inv, &QCheckBox::clicked, [=](bool bChecked){ settings.setValue("encoders/enc2Inverse", bChecked); });
+    ui->tableWidgetEncoders->setCellWidget(1,3, checkBoxWidget);
+
+
+
+//    QTableWidgetItem *checkBoxItem = new QTableWidgetItem();
+//    checkBoxItem->setTextAlignment(Qt::AlignHCenter);
+//    checkBoxItem->setCheckState(Qt::Unchecked);
+
+    //ui->tableWidgetEncoders->item(0,3)->setCheckState(Qt::Unchecked);
+    //ui->tableWidgetEncoders->setItem(0,3, NULL);
+    //ui->tableWidgetEncoders->setItem(0,3, checkBoxItem);
+    //ui->tableWidgetEncoders->setItem(1,3, checkBoxItem);
 
 }
 
@@ -878,9 +917,13 @@ void Dialog::sendPosData()
         cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
     }
     else if(horEncSelectBG->checkedId() == 1){
-        cbdata.pos2 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
         cbdata.pos1 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
     }
+    if(checkEnc1Inv->isChecked())
+        cbdata.pos1 = 0x1fff - cbdata.pos1;
+    if(checkEnc2Inv->isChecked())
+        cbdata.pos2 = 0x1fff - cbdata.pos2;
     //cbdata.distance = (int16_t)dist;
     bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(distVal<rangeThresh);
     cbdata.rangeThresh = distThreshExceed? 1:0;

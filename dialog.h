@@ -10,6 +10,7 @@
 #include <QSettings>
 #include <QButtonGroup>
 #include <QTableWidgetItem>
+#include <QCheckBox>
 
 namespace Ui {
 class Dialog;
@@ -72,8 +73,8 @@ private:
 
     QButtonGroup *horEncSelectBG;
     QTableWidgetItem *leEnc1, *leEnc2;
-    QTableWidgetItem *leEnc1Off, *leEnc2Off;
-
+    QTableWidgetItem *leEnc1Off, *leEnc2Off;    
+    QCheckBox *checkEnc1Inv, *checkEnc2Inv;
 
     void initEncTableWidget();
 
