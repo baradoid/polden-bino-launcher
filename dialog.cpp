@@ -22,7 +22,8 @@ Dialog::Dialog(QWidget *parent) :
     enc1Val(0), enc2Val(0),
     enc1Offset(0), enc2Offset(0),
     distanceOverThreshCnt(0),
-    lastDistTreshState(false)
+    lastDistTreshState(false),
+    comPacketsRcvd(0), comErrorPacketsRcvd(0)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -198,6 +199,10 @@ Dialog::Dialog(QWidget *parent) :
 
     initEncTableWidget();
 
+    QTimer *uiUpdateTimer = new QTimer(this);
+    connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUiUpdate()));
+    uiUpdateTimer->setInterval(200);
+    uiUpdateTimer->start();
 
 }
 
@@ -623,8 +628,14 @@ void Dialog::handleSerialReadyRead()
     for(int i=0; i<ba.length(); i++){
         recvStr.append((char)ba[i]);
         if(ba[i]=='\n'){
+            //qInfo("strLen %d", recvStr.length());
+            comPacketsRcvd++;
+            //appendLogString(QString("strLen:") + QString::number(recvStr.length()));
+            if(recvStr.length() != 17){
+                comErrorPacketsRcvd++;
+            }
             processStr(recvStr);
-            recvStr.clear();
+            recvStr.clear();            
         }
     }
 
@@ -889,7 +900,8 @@ void Dialog::updateUptime()
 void Dialog::handleLogUpdateTimeout()
 {
     QString curTime = QTime::currentTime().toString();
-    QString logString = curTime + ">" + "still alive, threshExceedCount: " + QString::number(distanceOverThreshCnt);
+    QString logString = curTime + ">" + "still alive, threshExceedCount: " + QString::number(distanceOverThreshCnt) + " ";
+    logString += "comRecvd/err:" + QString::number(comPacketsRcvd) + "/" + QString::number(comErrorPacketsRcvd);
 
     appendLogFileString(logString);
 }
@@ -948,4 +960,11 @@ void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
 {
     //settings.setValue("rangeAlwaysOn", checked);
     sendPosData();
+}
+
+
+void Dialog::handleUiUpdate()
+{
+    ui->lineEditComPacketsRcv->setText(QString::number(comPacketsRcvd));
+    ui->lineEditComPacketsRcvError->setText(QString::number(comErrorPacketsRcvd));
 }

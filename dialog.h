@@ -96,6 +96,7 @@ private:
 
     void sendPosData();
 
+    uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
 
 private slots:
@@ -127,6 +128,7 @@ private slots:
     void handleLogUpdateTimeout();
     void on_pushButtonEncSetZero_clicked();
     void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
+    void handleUiUpdate();
 };
 
 #endif // DIALOG_H

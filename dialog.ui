@@ -101,7 +101,7 @@
      <x>10</x>
      <y>10</y>
      <width>251</width>
-     <height>61</height>
+     <height>91</height>
     </rect>
    </property>
    <property name="title">
@@ -141,6 +141,64 @@
     </property>
     <property name="text">
      <string>refresh</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>51</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Обменов:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditComPacketsRcv">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>60</y>
+      <width>61</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>60</y>
+      <width>51</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Ошибок:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditComPacketsRcvError">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>60</y>
+      <width>61</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
@@ -348,7 +406,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>200</y>
+     <y>220</y>
      <width>251</width>
      <height>81</height>
     </rect>
@@ -862,7 +920,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>290</y>
+     <y>310</y>
      <width>251</width>
      <height>81</height>
     </rect>
@@ -1208,7 +1266,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>80</y>
+     <y>100</y>
      <width>251</width>
      <height>111</height>
     </rect>
