@@ -711,6 +711,19 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <zorder>lineEditBuildPath</zorder>
+   <zorder>pushButtonWdSelectPath</zorder>
+   <zorder>checkBoxWdEnable</zorder>
+   <zorder>pushButtonWDTest</zorder>
+   <zorder>lineEditWdTimeOutSecs</zorder>
+   <zorder>label_12</zorder>
+   <zorder>label_13</zorder>
+   <zorder>label_14</zorder>
+   <zorder>label_wd_noclients</zorder>
+   <zorder>lineEdit_wdNoClientsTimer</zorder>
+   <zorder>label_wd_noclients_2</zorder>
+   <zorder>lineEditFpsLimit</zorder>
+   <zorder>checkBoxAppAutostart</zorder>
   </widget>
   <widget class="QGroupBox" name="groupBox_7">
    <property name="geometry">
@@ -1352,7 +1365,7 @@ zero</string>
     <rect>
      <x>270</x>
      <y>190</y>
-     <width>151</width>
+     <width>161</width>
      <height>17</height>
     </rect>
    </property>

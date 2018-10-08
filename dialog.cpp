@@ -977,7 +977,7 @@ void Dialog::initAppAutoStartCheckBox()
     ui->checkBoxAppAutostart->setToolTip(QCoreApplication::applicationFilePath());
     QSettings autoStartSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
 
-    QString appAutoStartPath = autoStartSettings.value(QCoreApplication::applicationName()).toString();
+    QString appAutoStartPath = autoStartSettings.value("bino-launcher").toString();
     appAutoStartPath.remove("\"");
     appAutoStartPath.replace("\\","/");
 
@@ -991,23 +991,22 @@ void Dialog::initAppAutoStartCheckBox()
 
         if (bChecked) {
             QString value = QCoreApplication::applicationFilePath(); //get absolute path of running exe
-            QString apostroph = "\"";
 
         #ifdef DEBUG
             ui->textEdit->append(QCoreApplication::applicationFilePath ());
         #endif
 
             value.replace("/","\\");
-            value = apostroph + value + apostroph /*+ " --argument"*/;
+            value = "\"" + value + "\"" /*+ " --argument"*/;
 
         #ifdef DEBUG
             ui->textEdit->append(value);
         #endif
             //write value to the register
-            autoStartSettings.setValue(QCoreApplication::applicationName(), value);
+            autoStartSettings.setValue("bino-launcher", value);
         }
         else {
-            autoStartSettings.remove(QCoreApplication::applicationName());
+            autoStartSettings.remove("bino-launcher");
         }
 
     });
