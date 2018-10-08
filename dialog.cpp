@@ -204,6 +204,9 @@ Dialog::Dialog(QWidget *parent) :
     uiUpdateTimer->setInterval(200);
     uiUpdateTimer->start();
 
+
+    initAppAutoStartCheckBox();
+
 }
 
 
@@ -967,4 +970,45 @@ void Dialog::handleUiUpdate()
 {
     ui->lineEditComPacketsRcv->setText(QString::number(comPacketsRcvd));
     ui->lineEditComPacketsRcvError->setText(QString::number(comErrorPacketsRcvd));
+}
+
+void Dialog::initAppAutoStartCheckBox()
+{
+    ui->checkBoxAppAutostart->setToolTip(QCoreApplication::applicationFilePath());
+    QSettings autoStartSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+
+    QString appAutoStartPath = autoStartSettings.value(QCoreApplication::applicationName()).toString();
+    appAutoStartPath.remove("\"");
+    appAutoStartPath.replace("\\","/");
+
+    if(appAutoStartPath == QCoreApplication::applicationFilePath())
+        ui->checkBoxAppAutostart->setChecked(true);
+
+
+    connect( ui->checkBoxAppAutostart, &QCheckBox::clicked,
+             [=](bool bChecked){
+        QSettings autoStartSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+
+        if (bChecked) {
+            QString value = QCoreApplication::applicationFilePath(); //get absolute path of running exe
+            QString apostroph = "\"";
+
+        #ifdef DEBUG
+            ui->textEdit->append(QCoreApplication::applicationFilePath ());
+        #endif
+
+            value.replace("/","\\");
+            value = apostroph + value + apostroph /*+ " --argument"*/;
+
+        #ifdef DEBUG
+            ui->textEdit->append(value);
+        #endif
+            //write value to the register
+            autoStartSettings.setValue(QCoreApplication::applicationName(), value);
+        }
+        else {
+            autoStartSettings.remove(QCoreApplication::applicationName());
+        }
+
+    });
 }

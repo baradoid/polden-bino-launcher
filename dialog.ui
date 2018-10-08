@@ -35,7 +35,7 @@
    <property name="geometry">
     <rect>
      <x>270</x>
-     <y>280</y>
+     <y>310</y>
      <width>251</width>
      <height>101</height>
     </rect>
@@ -206,7 +206,7 @@
    <property name="geometry">
     <rect>
      <x>270</x>
-     <y>190</y>
+     <y>220</y>
      <width>251</width>
      <height>81</height>
     </rect>
@@ -292,7 +292,7 @@
    </property>
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>10</x>
      <y>380</y>
      <width>251</width>
      <height>81</height>
@@ -920,7 +920,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>310</y>
+     <y>300</y>
      <width>251</width>
      <height>81</height>
     </rect>
@@ -1226,6 +1226,9 @@
        </item>
        <item>
         <widget class="QLineEdit" name="lineEditCpuTemp">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>n/a</string>
          </property>
@@ -1246,6 +1249,9 @@
        </item>
        <item>
         <widget class="QLineEdit" name="lineEditGpuTemp">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>n/a</string>
          </property>
@@ -1266,7 +1272,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>100</y>
+     <y>110</y>
      <width>251</width>
      <height>111</height>
     </rect>
@@ -1341,6 +1347,19 @@ zero</string>
     </property>
    </widget>
   </widget>
+  <widget class="QCheckBox" name="checkBoxAppAutostart">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>190</y>
+     <width>151</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Автозапуск приложения</string>
+   </property>
+  </widget>
   <zorder>groupBox_3</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
@@ -1353,6 +1372,7 @@ zero</string>
   <zorder>groupBox_8</zorder>
   <zorder>groupBox_9</zorder>
   <zorder>groupBox_10</zorder>
+  <zorder>checkBoxAppAutostart</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

@@ -77,6 +77,7 @@ private:
     QCheckBox *checkEnc1Inv, *checkEnc2Inv;
 
     void initEncTableWidget();
+    void initAppAutoStartCheckBox();
 
     void processStr(QString str);
 
