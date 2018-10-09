@@ -114,16 +114,16 @@ Dialog::Dialog(QWidget *parent) :
 
     QString mainCom = settings.value("usbMain", "").toString();
 
-    appendLogString(QString("restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
+    appendLogString(QString("COM: restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
 
     if(ui->comComboBox->count() == 0){
-        appendLogString(QString("no com ports in system"));
+        appendLogString(QString("COM: no com ports in system"));
     }
     else{
         for(int i=0; i<ui->comComboBox->count(); i++){
            // ui->comComboBoxUsbMain->itemData()
             if(ui->comComboBox->itemData(i).toString() == mainCom){
-                appendLogString(QString("com port %1 present. Try open.").arg(mainCom));
+                appendLogString(QString("COM: port %1 present. Try open.").arg(mainCom));
                 ui->comComboBox->setCurrentIndex(i);
                 on_pushButtonComOpen_clicked();
                 if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
@@ -201,11 +201,17 @@ Dialog::Dialog(QWidget *parent) :
 
     QTimer *uiUpdateTimer = new QTimer(this);
     connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUiUpdate()));
-    uiUpdateTimer->setInterval(200);
+    uiUpdateTimer->setInterval(50);
     uiUpdateTimer->start();
 
 
     initAppAutoStartCheckBox();
+
+    writeCbParamsTimer = new QTimer(this);
+    connect(writeCbParamsTimer, SIGNAL(timeout()), this, SLOT(handleWriteCBParamsTimeout()));
+    writeCbParamsTimer->setInterval(100);
+    writeCbParamsTimer->start();
+    cbWriteParamsCount = 3;
 
 }
 
@@ -520,11 +526,11 @@ void Dialog::on_pushButtonComOpen_clicked()
                  serial.setPortName(comName);
                  if (!serial.open(QIODevice::ReadWrite)) {
                      qDebug("%s port open FAIL", qUtf8Printable(comName));
-                     appendLogString(QString("%1 port open FAIL").arg(comName));
+                     appendLogString(QString("COM: %1 port open FAIL").arg(comName));
                      return;
                  }                 
 //                 qDebug("%s port opened", qUtf8Printable(comName));
-                 appendLogString(QString("%1 port opened").arg(comName));
+                 appendLogString(QString("COM: port %1 opened").arg(serial.portName()));
                  connect(&serial, SIGNAL(readyRead()),
                          this, SLOT(handleSerialReadyRead()));
 //                 connect(&serial, SIGNAL(bytesWritten(qint64)),
@@ -534,6 +540,7 @@ void Dialog::on_pushButtonComOpen_clicked()
                  //ui->statusBar->showMessage("connected", 2000);
                  recvdComPacks = 0;
                  startRecvTime = QTime::currentTime();
+                 cbWriteParamsCount = 3;
              }
          }
      }
@@ -544,6 +551,7 @@ void Dialog::on_pushButtonComOpen_clicked()
          ui->pushButtonComOpen->setText("open");
          //contrStringQueue.clear();
          //ui->statusBar->showMessage("disconnected", 2000);
+         appendLogString(QString("COM: port %1 closed").arg(serial.portName()));
      }
 }
 
@@ -556,7 +564,7 @@ void Dialog::on_pushButton_refreshCom_clicked()
     QString manufacturer;
     QString serialNumber;
 
-    QString logStr("com ports present: ");
+    QString logStr("COM: com ports present: ");
     for (const QSerialPortInfo &serialPortInfo : serialPortInfos) {
            description = serialPortInfo.description();
            manufacturer = serialPortInfo.manufacturer();
@@ -599,15 +607,11 @@ void Dialog::processStr(QString str)
         int dist = strList[2].toInt(Q_NULLPTR, 10);
         //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
         //ui->lineEditEnc1->setText(QString::number(xPos1));
-        leEnc1->setText(QString::number(xPos1));
         //ui->lineEditEnc2->setText(QString::number(xPos2));
-        leEnc2->setText(QString::number(xPos2));
-        ui->lineEditRange->setText(QString::number(dist));
         //ui->lineEditTerm1->setText(QString::number(temp));
         //qDebug() << xPos1 << xPos2;
 
         rangeThresh = ui->lineEditRangeThresh->text().toInt();
-
 
         //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
         enc1Val = xPos1;
@@ -970,6 +974,9 @@ void Dialog::handleUiUpdate()
 {
     ui->lineEditComPacketsRcv->setText(QString::number(comPacketsRcvd));
     ui->lineEditComPacketsRcvError->setText(QString::number(comErrorPacketsRcvd));
+    leEnc1->setText(QString::number(enc1Val));
+    leEnc2->setText(QString::number(enc2Val));
+    ui->lineEditRange->setText(QString::number(distVal));
 }
 
 void Dialog::initAppAutoStartCheckBox()
@@ -1010,4 +1017,19 @@ void Dialog::initAppAutoStartCheckBox()
         }
 
     });
+}
+
+void Dialog::handleWriteCBParamsTimeout()
+{
+    if(serial.isWritable() == true){
+        if(cbWriteParamsCount > 0){
+            cbWriteParamsCount--;
+
+            if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
+                setAudioEnable(true);
+        }
+        else{
+            //writeCbParamsTimer->stop();
+        }
+    }
 }

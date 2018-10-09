@@ -99,6 +99,9 @@ private:
 
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
+    QTimer *writeCbParamsTimer;
+    uint8_t cbWriteParamsCount;
+
 
 private slots:
     void handleReadPendingDatagrams();
@@ -130,6 +133,7 @@ private slots:
     void on_pushButtonEncSetZero_clicked();
     void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
     void handleUiUpdate();
+    void handleWriteCBParamsTimeout();
 };
 
 #endif // DIALOG_H
