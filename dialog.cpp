@@ -727,6 +727,8 @@ void Dialog::handleWdTimeout()
 void Dialog::on_checkBoxWdEnable_clicked(bool checked)
 {
     settings.setValue("watchdog/ena", checked);
+    appendLogString(QString("push button watchdog %1").arg(checked? "enable" : "disable"));
+
 }
 
 void Dialog::on_lineEditLogPath_editingFinished()
@@ -869,6 +871,7 @@ void Dialog::on_audioOff_clicked()
 void Dialog::on_checkBoxAudioEnableOnStartup_clicked()
 {
     settings.setValue("auidoEnableOnStartup", ui->checkBoxAudioEnableOnStartup->isChecked());
+    appendLogString(QString("push button audio enable on startup %1").arg(ui->checkBoxAudioEnableOnStartup->isChecked()?"enable":"disable"));
 
 }
 
@@ -926,6 +929,8 @@ void Dialog::on_pushButtonEncSetZero_clicked()
     leEnc2Off->setText(QString::number(enc2Offset));
 
     sendPosData();
+
+    appendLogString(QString("set new zero point: %1 %2 ").arg(enc1Offset).arg(enc2Offset));
 }
 
 void Dialog::sendPosData()
