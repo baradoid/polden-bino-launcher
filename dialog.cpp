@@ -16,7 +16,7 @@ Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
     enc1(0),enc2(0),r(0),
-    settings("bino-settings.ini", QSettings::IniFormat),
+    settings("Polden Ltd.", "bino-launcher"),
     wdNoClientsTimeSecs(0),
     bUnityStarted(false),
     enc1Val(0), enc2Val(0),
