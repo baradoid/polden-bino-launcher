@@ -680,7 +680,7 @@ void Dialog::on_pushButtonWDTest_clicked()
 void Dialog::on_pushButtonWdSelectPath_clicked()
 {
     QString str = QFileDialog::getOpenFileName(this,
-       tr("Select unity build exe file"), "/home/jana", tr("Unity Build exe file (*.exe)"));
+       tr("Select unity build exe file"), "/home/jana", tr("Unity Build exe file (*.exe *.bat)"));
     if(str.isEmpty() == false){
         settings.setValue("watchdog/unityBuildExePath", str);
         ui->lineEditBuildPath->setText(str);
@@ -1037,4 +1037,25 @@ void Dialog::handleWriteCBParamsTimeout()
             //writeCbParamsTimer->stop();
         }
     }
+}
+
+void Dialog::on_pushButtonFindWindow_clicked()
+{
+    HWND wfp;
+    wfp = FindWindow(NULL, L"Калькулятор");
+    qInfo("%x", wfp);
+    long Style = GetWindowLong(wfp, GWL_STYLE);
+    qInfo("Style:%x", Style);
+
+//    if(IsIconic(wfp) == TRUE){
+//        qInfo("iconic");
+
+//    }
+    qInfo() << IsIconic(wfp) << IsWindowVisible (wfp) << IsZoomed(wfp);
+
+    SendMessage(wfp, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+
+
+
+
 }
