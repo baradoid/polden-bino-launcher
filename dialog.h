@@ -133,8 +133,8 @@ private slots:
     void on_pushButtonEncSetZero_clicked();
     void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
     void handleUiUpdate();
-    void handleWriteCBParamsTimeout();
-    void on_pushButtonFindWindow_clicked();
+    void handleWriteCBParamsTimeout();    
+    void on_pushButtonFindWnd_clicked();
 };
 
 #endif // DIALOG_H

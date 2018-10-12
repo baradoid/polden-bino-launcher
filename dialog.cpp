@@ -982,6 +982,8 @@ void Dialog::handleUiUpdate()
     leEnc1->setText(QString::number(enc1Val));
     leEnc2->setText(QString::number(enc2Val));
     ui->lineEditRange->setText(QString::number(distVal));
+
+    on_pushButtonFindWnd_clicked();
 }
 
 void Dialog::initAppAutoStartCheckBox()
@@ -1039,23 +1041,82 @@ void Dialog::handleWriteCBParamsTimeout()
     }
 }
 
-void Dialog::on_pushButtonFindWindow_clicked()
+void Dialog::on_pushButtonFindWnd_clicked()
 {
-    HWND wfp;
-    wfp = FindWindow(NULL, L"Калькулятор");
-    qInfo("%x", wfp);
-    long Style = GetWindowLong(wfp, GWL_STYLE);
-    qInfo("Style:%x", Style);
+    HWND wfp, hwndPar;
+    wfp = FindWindow(NULL, L"VR");
+    if(wfp == NULL){
+        ui->checkBox_WS_MINIMIZE->setEnabled(false);
+        ui->checkBox_WS_CAPTION->setEnabled(false);
+        ui->checkBox_WS_MAXIMIZE->setEnabled(false);
+        ui->checkBox_WS_POPUP->setEnabled(false);
+        ui->checkBox_WS_DLGFRAME->setEnabled(false);
+        ui->checkBox_WS_BORDER->setEnabled(false);
+        ui->checkBox_BuildOnTop->setEnabled(false);
+    }
+    else{
+        ui->checkBox_WS_MINIMIZE->setEnabled(true);
+        ui->checkBox_WS_CAPTION->setEnabled(true);
+        ui->checkBox_WS_MAXIMIZE->setEnabled(true);
+        ui->checkBox_WS_POPUP->setEnabled(true);
+        ui->checkBox_WS_DLGFRAME->setEnabled(true);
+        ui->checkBox_WS_BORDER->setEnabled(true);
+        ui->checkBox_BuildOnTop->setEnabled(true);
 
-//    if(IsIconic(wfp) == TRUE){
-//        qInfo("iconic");
+        hwndPar = GetParent(wfp);
+    //    if(hwndPar != NULL)
+    //        wfp = hwndPar;
+        hwndPar = GetWindow(wfp, GW_OWNER);
+    //    qInfo("%x %x", wfp, hwndPar);
+        long Style = GetWindowLong(wfp, GWL_STYLE);
+    //    qInfo("Style:%x", Style);
 
-//    }
-    qInfo() << IsIconic(wfp) << IsWindowVisible (wfp) << IsZoomed(wfp);
+    //    if(IsIconic(wfp) == TRUE){
+    //        qInfo("iconic");
 
-    SendMessage(wfp, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+    //    }
+    //    qInfo() << IsIconic(wfp) << IsWindowVisible (wfp) << IsZoomed(wfp);
+
+        uint32_t style;
+        style = GetWindowLong(wfp, GWL_STYLE);
+        QString str;
+        str.sprintf("style: 0x%x ", style);
+    //    if(style&WS_VISIBLE)
+    //        str.append("WS_VISIBLE ");
+    //    if(style&WS_MAXIMIZE)
+    //        str.append("WS_MAXIMIZE ");
+    //    if(style&WS_ICONIC)
+    //        str.append("WS_ICONIC ");
+    //    if(style&WS_OVERLAPPED)
+    //        str.append("WS_OVERLAPPED ");
+    //    if(style&WS_CAPTION)
+    //        str.append("WS_CAPTION ");
+        //qInfo() << qPrintable(str);
+
+        ui->checkBox_WS_MINIMIZE->setChecked((style&WS_MINIMIZE)!=0);
+        ui->checkBox_WS_CAPTION->setChecked((style&WS_CAPTION)!=0);
+        ui->checkBox_WS_MAXIMIZE->setChecked((style&WS_MAXIMIZE)!=0);
+        ui->checkBox_WS_POPUP->setChecked((style&WS_POPUP)!=0);
+        ui->checkBox_WS_DLGFRAME->setChecked((style&WS_DLGFRAME)!=0);
+        ui->checkBox_WS_BORDER->setChecked((style&WS_BORDER)!=0);
+
+        if(ui->checkBox_WS_POPUP->isChecked() == false){
+            //SetWindowLong(wfp, GWL_STYLE, WS_POPUP|WS_MAXIMIZE);
+            SendMessage(wfp, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+        }
+
+        if(IsZoomed(wfp)){
+            //SendMessage(wfp, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+
+        }
+        else{
+            //SendMessage(wfp, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+        }
+
+        ui->checkBox_BuildOnTop->setChecked(wfp == GetForegroundWindow());
+        //qInfo("hwnd 0x%x tw 0x%x", wfp, GetForegroundWindow());
 
 
-
-
+    }
 }
+

@@ -35,9 +35,9 @@
    <property name="geometry">
     <rect>
      <x>270</x>
-     <y>310</y>
+     <y>290</y>
      <width>251</width>
-     <height>101</height>
+     <height>71</height>
     </rect>
    </property>
    <property name="title">
@@ -206,7 +206,7 @@
    <property name="geometry">
     <rect>
      <x>270</x>
-     <y>220</y>
+     <y>210</y>
      <width>251</width>
      <height>81</height>
     </rect>
@@ -552,9 +552,9 @@
    <widget class="QLineEdit" name="lineEditBuildPath">
     <property name="geometry">
      <rect>
-      <x>100</x>
+      <x>50</x>
       <y>80</y>
-      <width>361</width>
+      <width>411</width>
       <height>21</height>
      </rect>
     </property>
@@ -645,12 +645,12 @@
      <rect>
       <x>10</x>
       <y>80</y>
-      <width>81</width>
+      <width>31</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Путь до Vr.exe</string>
+     <string>Путь:</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_wd_noclients">
@@ -1360,6 +1360,124 @@ zero</string>
     <string>Автозапуск приложения</string>
    </property>
   </widget>
+  <widget class="QGroupBox" name="groupBox_11">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>360</y>
+     <width>251</width>
+     <height>96</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Window state</string>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_8">
+    <item>
+     <widget class="QWidget" name="widget_8" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_MINIMIZE">
+         <property name="text">
+          <string>MINIMIZE</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_MAXIMIZE">
+         <property name="text">
+          <string>MAXIMIZE</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_POPUP">
+         <property name="text">
+          <string>POPUP</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget_10" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout_6">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_CAPTION">
+         <property name="text">
+          <string>CAPTION</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_DLGFRAME">
+         <property name="text">
+          <string>DLGFRAME</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_WS_BORDER">
+         <property name="text">
+          <string>BORDER</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget_11" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QCheckBox" name="checkBox_BuildOnTop">
+         <property name="text">
+          <string>OnTop</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
   <zorder>groupBox_3</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
@@ -1373,6 +1491,7 @@ zero</string>
   <zorder>groupBox_9</zorder>
   <zorder>groupBox_10</zorder>
   <zorder>checkBoxAppAutostart</zorder>
+  <zorder>groupBox_11</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
