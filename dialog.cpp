@@ -229,9 +229,13 @@ Dialog::Dialog(QWidget *parent) :
     connect(nam, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(handleNamReplyFinished(QNetworkReply*)));
 
+    QPalette palette;
+    palette.setColor(QPalette::Base,Qt::gray);
+    ui->lineEdit_manserver_stat->setPalette(palette);
+    ui->lineEdit_manserver_stat->setText("n/a");
 
+    QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
 
-    webLogin();
 }
 
 
@@ -1142,9 +1146,9 @@ void Dialog::on_pushButtonFindWnd_clicked()
 
 void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 {
-    if(repl->error() == QNetworkReply::NoError){
+
         QString readed(repl->readAll());
-        qDebug() << readed;
+
         QList<QNetworkReply::RawHeaderPair> headPairs = repl->rawHeaderPairs();
 
 //        foreach(QNetworkReply::RawHeaderPair  p,  headPairs){
@@ -1160,33 +1164,47 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
         //uq.allQueryItemValues()
         //qDebug() << "GUID: " << uq.queryItemValue("guid").toLatin1();
 
-        if(webState == idle){
-            guid = uq.queryItemValue("guid");
-            appendLogString("WEB: " + readed);
-            if(guid.isEmpty() == false){
-                appendLogString("WEB: connection success");
-                setConnectionSuccess();
-                QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
-                QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
-                webState = connected;
+        QString reqStr = repl->request().url().toString();
+        qDebug() << "req: " << qPrintable(reqStr);
+        qDebug() << readed;
+
+        if(reqStr.endsWith("login.php")){
+            if(repl->error() == QNetworkReply::NoError){
+                guid = uq.queryItemValue("guid");
+                appendLogString("WEB: " + readed);
+                if(guid.isEmpty() == false){
+                    appendLogString("WEB: connection success");
+                    setConnectionSuccess();
+                    QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+                    QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
+                    webState = connected;
+                }
+                else{
+                    appendLogString("WEB: no guid returned");
+                    setConnectionError("no guid returned");
+                    QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
+                }
             }
             else{
-                appendLogString("WEB: no guid returned");
-                setConnectionError("no guid returned");
-                webLogin();
+                setConnectionError(repl->errorString());
+                QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
             }
         }
-        else if(webState == connected){
+        else if(reqStr.endsWith("tasks.php")){
+
+        }
+        else if(reqStr.endsWith("alive.php")){
             if(uq.queryItemValue("ok").isEmpty() == true){
                 appendLogString("WEB: unexpected repl on alive: " + readed);
             }
             QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
         }
-    }
-    else{
-        setConnectionError(repl->errorString());
-    }
 
+        if(webState == idle){
+
+        }
+        else if(webState == connected){
+        }   
 }
 
 void Dialog::setConnectionError(QString errStr)
@@ -1208,6 +1226,10 @@ void Dialog::setConnectionSuccess()
     ui->lineEdit_manserver_stat->setPalette(palette);
 }
 
+void Dialog::handleWbLoginTimeout()
+{
+    webLogin();
+}
 
 void Dialog::handlePostAliveTimeout()
 {

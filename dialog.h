@@ -152,6 +152,8 @@ private slots:
     void on_pushButtonFindWnd_clicked();
 
     void handleNamReplyFinished(QNetworkReply*);
+
+    void handleWbLoginTimeout();
     void handlePostAliveTimeout();
     void handlePostTasksTimeout();
 };
