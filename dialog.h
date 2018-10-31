@@ -12,6 +12,9 @@
 #include <QTableWidgetItem>
 #include <QCheckBox>
 
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+
 namespace Ui {
 class Dialog;
 }
@@ -36,6 +39,8 @@ protected:
 signals:
     void mousePressedSignal();
 };
+
+typedef enum { idle, connected } TWebState;
 
 class Dialog : public QDialog
 {
@@ -101,6 +106,16 @@ private:
 
     QTimer *writeCbParamsTimer;
     uint8_t cbWriteParamsCount;
+    QNetworkAccessManager *nam;
+    TWebState webState;
+    QString guid;
+
+
+    void setConnectionError(QString errStr);
+    void setConnectionSuccess();
+    void webLogin();
+    void webSendAlive();
+    void webSendTasks();
 
 
 private slots:
@@ -135,6 +150,10 @@ private slots:
     void handleUiUpdate();
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
+
+    void handleNamReplyFinished(QNetworkReply*);
+    void handlePostAliveTimeout();
+    void handlePostTasksTimeout();
 };
 
 #endif // DIALOG_H

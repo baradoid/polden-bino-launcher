@@ -12,6 +12,9 @@
 #include <windows.h>
 #include <QRadioButton>
 
+#include <QUrlQuery>
+#include <QPair>
+
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
@@ -23,7 +26,8 @@ Dialog::Dialog(QWidget *parent) :
     enc1Offset(0), enc2Offset(0),
     distanceOverThreshCnt(0),
     lastDistTreshState(false),
-    comPacketsRcvd(0), comErrorPacketsRcvd(0)
+    comPacketsRcvd(0), comErrorPacketsRcvd(0),
+    webState(idle)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -213,7 +217,23 @@ Dialog::Dialog(QWidget *parent) :
     writeCbParamsTimer->start();
     cbWriteParamsCount = 3;
 
+    QString wbPath = settings.value("webManger/path", "http://localhost").toString();
+    QString wbUser = settings.value("webManger/user", "bino").toString();
+    QString wbPass = settings.value("webManger/pass", "bino12345").toString();
+
+    ui->lineEdit_wbPath->setText(wbPath);
+    ui->lineEdit_wbUser->setText(wbUser);
+    ui->lineEdit_wbPass->setText(wbPass);
+
+    nam = new QNetworkAccessManager(this);
+    connect(nam, SIGNAL(finished(QNetworkReply*)),
+                this, SLOT(handleNamReplyFinished(QNetworkReply*)));
+
+
+
+    webLogin();
 }
+
 
 
 Dialog::~Dialog()
@@ -1120,3 +1140,125 @@ void Dialog::on_pushButtonFindWnd_clicked()
     }
 }
 
+void Dialog::handleNamReplyFinished(QNetworkReply* repl)
+{
+    if(repl->error() == QNetworkReply::NoError){
+        QString readed(repl->readAll());
+        qDebug() << readed;
+        QList<QNetworkReply::RawHeaderPair> headPairs = repl->rawHeaderPairs();
+
+//        foreach(QNetworkReply::RawHeaderPair  p,  headPairs){
+//            qDebug() << p.first << p.second;
+//        }
+
+        readed.replace('|', '&');
+        QUrlQuery uq(readed);
+        //qDebug() << readed;
+        //qDebug() << uq.queryPairDelimiter() << uq.queryValueDelimiter();
+        //uq.setQueryDelimiters('=', '|');
+        //qDebug() << uq.queryPairDelimiter() << uq.queryValueDelimiter();
+        //uq.allQueryItemValues()
+        //qDebug() << "GUID: " << uq.queryItemValue("guid").toLatin1();
+
+        if(webState == idle){
+            guid = uq.queryItemValue("guid");
+            appendLogString("WEB: " + readed);
+            if(guid.isEmpty() == false){
+                appendLogString("WEB: connection success");
+                setConnectionSuccess();
+                QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+                QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
+                webState = connected;
+            }
+            else{
+                appendLogString("WEB: no guid returned");
+                setConnectionError("no guid returned");
+                webLogin();
+            }
+        }
+        else if(webState == connected){
+            if(uq.queryItemValue("ok").isEmpty() == true){
+                appendLogString("WEB: unexpected repl on alive: " + readed);
+            }
+            QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+        }
+    }
+    else{
+        setConnectionError(repl->errorString());
+    }
+
+}
+
+void Dialog::setConnectionError(QString errStr)
+{
+    //qDebug() << repl->error() << qPrintable(errStr);
+    ui->lineEdit_manserver_stat->setText(QString("error: ")+errStr);
+    QPalette palette;
+    palette.setColor(QPalette::Base,Qt::red);
+    //palette.setColor(QPalette::Text,Qt::white);
+    ui->lineEdit_manserver_stat->setPalette(palette);
+}
+
+void Dialog::setConnectionSuccess()
+{
+    ui->lineEdit_manserver_stat->setText("connected");
+    QPalette palette;
+    palette.setColor(QPalette::Base,Qt::green);
+    //palette.setColor(QPalette::Text,Qt::white);
+    ui->lineEdit_manserver_stat->setPalette(palette);
+}
+
+
+void Dialog::handlePostAliveTimeout()
+{
+    webSendAlive();
+}
+void Dialog::handlePostTasksTimeout()
+{
+    webSendTasks();
+}
+
+void Dialog::webLogin()
+{
+    QString wbUser = ui->lineEdit_wbUser->text();
+    QString wbPass = ui->lineEdit_wbPass->text();
+
+    QString wbPath = ui->lineEdit_wbPath->text();
+ //   QByteArray requestString = "login=bino&psswd=bino12345";
+    QUrlQuery params;
+    params.addQueryItem("login", wbUser);
+    params.addQueryItem("psswd", wbPass);
+
+\
+    QNetworkRequest request;
+    request.setUrl(QUrl(wbPath+"/bino/login.php"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+
+    nam->post(request, params.toString().toLatin1());
+}
+
+void Dialog::webSendAlive()
+{
+    QString wbPath = ui->lineEdit_wbPath->text();
+    QUrlQuery params;
+    params.addQueryItem("guid", guid.toLatin1());
+
+    QNetworkRequest request;
+    request.setUrl(QUrl(wbPath+"/bino/alive.php"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+
+    nam->post(request, params.toString().toLatin1());
+}
+
+void Dialog::webSendTasks()
+{
+    QString wbPath = ui->lineEdit_wbPath->text();
+    QUrlQuery params;
+    params.addQueryItem("guid", guid.toLatin1());
+
+    QNetworkRequest request;
+    request.setUrl(QUrl(wbPath+"/bino/tasks.php"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+
+    nam->post(request, params.toString().toLatin1());
+}
