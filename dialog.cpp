@@ -1165,8 +1165,7 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
         //qDebug() << "GUID: " << uq.queryItemValue("guid").toLatin1();
 
         QString reqStr = repl->request().url().toString();
-        qDebug() << "req: " << qPrintable(reqStr);
-        qDebug() << readed;
+        //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
 
         if(reqStr.endsWith("login.php")){
             if(repl->error() == QNetworkReply::NoError){
@@ -1175,7 +1174,7 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                 if(guid.isEmpty() == false){
                     appendLogString("WEB: connection success");
                     setConnectionSuccess();
-                    QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+                    QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
                     QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
                     webState = connected;
                 }
@@ -1191,12 +1190,22 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
             }
         }
         else if(reqStr.endsWith("tasks.php")){
+            //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
+            QString tasks("WEB: incoming tasks: ");
+            tasks += readed;
+            appendLogString(tasks);
 
         }
-        else if(reqStr.endsWith("alive.php")){
-            if(uq.queryItemValue("ok").isEmpty() == true){
-                appendLogString("WEB: unexpected repl on alive: " + readed);
+        else if(reqStr.endsWith("alive.php")){            
+            if(readed == "ok"){
+                setConnectionSuccess();
             }
+            else{
+                //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
+                appendLogString("WEB: unexpected repl on alive: " + readed);
+                setConnectionError("unexpected response");
+            }
+
             QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
         }
 
@@ -1284,3 +1293,28 @@ void Dialog::webSendTasks()
 
     nam->post(request, params.toString().toLatin1());
 }
+
+void Dialog::on_lineEdit_wbPath_editingFinished()
+{
+    qDebug() << "on_lineEdit_wbPath_editingFinished";
+
+    QString wbPath = ui->lineEdit_wbPath->text();
+    settings.setValue("webManger/path", wbPath);
+}
+
+
+void Dialog::on_lineEdit_wbUser_editingFinished()
+{
+    qDebug() << "on_lineEdit_wbUser_editingFinished";
+    QString wbUser = ui->lineEdit_wbUser->text();
+    settings.setValue("webManger/user", wbUser);
+}
+
+void Dialog::on_lineEdit_wbPass_editingFinished()
+{
+    qDebug() << "on_lineEdit_wbPass_editingFinished";
+    QString wbPass = ui->lineEdit_wbPass->text();
+    settings.setValue("webManger/pass", wbPass);
+}
+
+

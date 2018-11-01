@@ -110,7 +110,6 @@ private:
     TWebState webState;
     QString guid;
 
-
     void setConnectionError(QString errStr);
     void setConnectionSuccess();
     void webLogin();
@@ -156,6 +155,9 @@ private slots:
     void handleWbLoginTimeout();
     void handlePostAliveTimeout();
     void handlePostTasksTimeout();
+    void on_lineEdit_wbPath_editingFinished();
+    void on_lineEdit_wbUser_editingFinished();
+    void on_lineEdit_wbPass_editingFinished();
 };
 
 #endif // DIALOG_H
