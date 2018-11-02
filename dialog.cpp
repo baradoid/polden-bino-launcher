@@ -1190,20 +1190,34 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
             }
         }
         else if(reqStr.endsWith("tasks.php")){
-            //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-            QString tasks("WEB: incoming tasks: ");
-            tasks += readed;
-            appendLogString(tasks);
-
-        }
-        else if(reqStr.endsWith("alive.php")){            
-            if(readed == "ok"){
-                setConnectionSuccess();
+            if(repl->error() == QNetworkReply::NoError){
+                //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
+                QString tasks("WEB: incoming tasks: ");
+                tasks += readed;
+                appendLogString(tasks);
             }
             else{
-                //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-                appendLogString("WEB: unexpected repl on alive: " + readed);
-                setConnectionError("unexpected response");
+                appendLogString("WEB: error repl on tasks req: " + repl->errorString());
+                setConnectionError(repl->errorString());
+            }
+            QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
+
+        }
+        else if(reqStr.endsWith("alive.php")){
+
+            if(repl->error() == QNetworkReply::NoError){
+                if(readed == "ok"){
+                    setConnectionSuccess();
+                }
+                else{
+                    //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
+                    appendLogString("WEB: unexpected repl on alive req: " + readed);
+                    setConnectionError("unexpected response");
+                }
+            }
+            else{
+                appendLogString("WEB: error repl on alive req: " + repl->errorString());
+                setConnectionError(repl->errorString());
             }
 
             QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
