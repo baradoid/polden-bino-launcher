@@ -116,6 +116,7 @@ private:
     void webSendAlive();
     void webSendTasks();
 
+    void processTasks(QUrlQuery);
 
 private slots:
     void handleReadPendingDatagrams();

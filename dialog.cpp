@@ -1194,7 +1194,8 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                 //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
                 QString tasks("WEB: incoming tasks: ");
                 tasks += readed;
-                appendLogString(tasks);
+                appendLogString(tasks);                
+                processTasks(uq);
             }
             else{
                 appendLogString("WEB: error repl on tasks req: " + repl->errorString());
@@ -1332,3 +1333,13 @@ void Dialog::on_lineEdit_wbPass_editingFinished()
 }
 
 
+void Dialog::processTasks(QUrlQuery uq)
+{
+    qDebug() << uq.toString();
+    QList<QPair<QString, QString>> uqList = uq.queryItems();
+    qDebug() << uqList;
+    for(int i=0; i< uqList.count(); i++){
+        qDebug() << i << uqList[i];
+
+    }
+}
