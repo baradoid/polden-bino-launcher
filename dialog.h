@@ -116,7 +116,19 @@ private:
     void webSendAlive();
     void webSendTasks();
 
-    void processTasks(QUrlQuery);
+    void processTasks(QString);
+    void processTask(QString);
+
+    void installProgram(QString);
+    void uninstallProgram(QString);
+    void restart();
+    bool saveToDisk(const QString &filename, QIODevice *data);
+    QString saveFileName(const QUrl &url);
+    static bool isHttpRedirect(QNetworkReply *reply);
+
+    void zip(QString filename , QString zip_filename);
+    void unZip(QString zip_filename , QString filename);
+
 
 private slots:
     void handleReadPendingDatagrams();

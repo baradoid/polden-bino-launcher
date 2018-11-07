@@ -25,10 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        dialog.cpp
+        dialog.cpp \
+    foldercompressor.cpp
 
 HEADERS += \
-        dialog.h
+        dialog.h \
+    foldercompressor.h
 
 FORMS += \
         dialog.ui

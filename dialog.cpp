@@ -15,6 +15,8 @@
 #include <QUrlQuery>
 #include <QPair>
 
+#include <foldercompressor.h>
+
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
@@ -235,6 +237,29 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEdit_manserver_stat->setText("n/a");
 
     QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
+
+    //root dir
+    QString rootPath = settings.value("rootPath").toString();
+    if(rootPath.isEmpty()){
+        rootPath = QDir::currentPath();
+    }
+    if(QDir(rootPath).exists() == false){
+        QDir().mkdir(rootPath);
+    }
+
+    ui->lineEditRootPath->setText(rootPath);
+    connect(ui->pushButtonSelectRootPath, &QPushButton::clicked,
+        [=](){
+        QString str = QFileDialog::getExistingDirectory(this, tr("Select root dir"),
+                                                        rootPath,
+                                                        QFileDialog::ShowDirsOnly
+                                                        | QFileDialog::DontResolveSymlinks);
+        if(str.isEmpty() == false){
+            settings.setValue("rootPath", str);
+            ui->lineEditRootPath->setText(str);
+            ui->lineEditRootPath->setToolTip(str);
+        }
+    });
 
 }
 
@@ -1147,7 +1172,7 @@ void Dialog::on_pushButtonFindWnd_clicked()
 void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 {
 
-        QString readed(repl->readAll());
+
 
         QList<QNetworkReply::RawHeaderPair> headPairs = repl->rawHeaderPairs();
 
@@ -1155,8 +1180,6 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 //            qDebug() << p.first << p.second;
 //        }
 
-        readed.replace('|', '&');
-        QUrlQuery uq(readed);
         //qDebug() << readed;
         //qDebug() << uq.queryPairDelimiter() << uq.queryValueDelimiter();
         //uq.setQueryDelimiters('=', '|');
@@ -1169,6 +1192,10 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 
         if(reqStr.endsWith("login.php")){
             if(repl->error() == QNetworkReply::NoError){
+                QString readed(repl->readAll());
+                readed.replace('|', '&');
+                QUrlQuery uq(readed);
+
                 guid = uq.queryItemValue("guid");
                 appendLogString("WEB: " + readed);
                 if(guid.isEmpty() == false){
@@ -1191,11 +1218,15 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
         }
         else if(reqStr.endsWith("tasks.php")){
             if(repl->error() == QNetworkReply::NoError){
+                QString readed(repl->readAll());
+                readed.replace('|', '&');
+                QUrlQuery uq(readed);
+
                 //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
                 QString tasks("WEB: incoming tasks: ");
                 tasks += readed;
                 appendLogString(tasks);                
-                processTasks(uq);
+                processTasks(readed);
             }
             else{
                 appendLogString("WEB: error repl on tasks req: " + repl->errorString());
@@ -1207,6 +1238,10 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
         else if(reqStr.endsWith("alive.php")){
 
             if(repl->error() == QNetworkReply::NoError){
+                QString readed(repl->readAll());
+                readed.replace('|', '&');
+                QUrlQuery uq(readed);
+
                 if(readed == "ok"){
                     setConnectionSuccess();
                 }
@@ -1222,6 +1257,41 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
             }
 
             QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+        }
+        else{
+            //qDebug() << "unknown req: " << qPrintable(readed);
+//            QString filename = saveFileName(url);
+//            if (saveToDisk(filename, reply)) {
+//                printf("Download of %s succeeded (saved to %s)\n",
+//                       url.toEncoded().constData(), qPrintable(filename));
+//            }
+
+            QUrl url = repl->url();
+            if(repl->error()){
+                fprintf(stderr, "Download of %s failed: %s\n",
+                        url.toEncoded().constData(),
+                        qPrintable(repl->errorString()));
+            }
+            else{
+                if (isHttpRedirect(repl)){
+                    fputs("Request was redirected.\n", stderr);
+                }
+                else{
+                    QString filename = saveFileName(url);
+                    if (saveToDisk(filename, repl)) {
+                        qDebug("Download of %s succeeded (saved to %s)\n",
+                               url.toEncoded().constData(), qPrintable(filename));
+
+                        QString rootPath = ui->lineEditRootPath->text();
+                        QString filePath = rootPath + "/download/" + filename;
+                        QString fileOutPath = rootPath + "/download/";
+
+                        FolderCompressor fc;
+                        fc.decompressFolder(filePath, fileOutPath);
+                        //unZip(filePath, fileOutPath);
+                    }
+                }
+            }
         }
 
         if(webState == idle){
@@ -1275,7 +1345,7 @@ void Dialog::webLogin()
     params.addQueryItem("login", wbUser);
     params.addQueryItem("psswd", wbPass);
 
-\
+
     QNetworkRequest request;
     request.setUrl(QUrl(wbPath+"/bino/login.php"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
@@ -1333,13 +1403,161 @@ void Dialog::on_lineEdit_wbPass_editingFinished()
 }
 
 
-void Dialog::processTasks(QUrlQuery uq)
+void Dialog::processTasks(QString uq)
 {
-    qDebug() << uq.toString();
-    QList<QPair<QString, QString>> uqList = uq.queryItems();
-    qDebug() << uqList;
-    for(int i=0; i< uqList.count(); i++){
-        qDebug() << i << uqList[i];
+    qDebug() << qPrintable(uq);
+    QStringList strList = uq.split(";");
 
+    foreach(QString part, strList) {
+        qDebug() << "task: " << part;
+        processTask(part);
+        qDebug() << " ";
     }
+}
+
+void Dialog::processTask(QString task)
+{
+    QStringList taskParts = task.split("&");
+    if(taskParts.count() != 3){
+        QString errStr = "Err task: " + task;
+        appendLogString(errStr);
+        return;
+    }
+    QString taskType = taskParts[1];
+    if(taskType == "install_program"){
+        appendLogString("install program task");
+        qDebug() << "install program task " << taskParts;
+        QStringList pathParts = taskParts[2].split("!");
+        qDebug() << "install program task path " << pathParts;
+        if(pathParts.count() != 2){
+            QString errStr = "Err install task path: " + taskParts[2];
+            appendLogString(errStr);
+            return;
+        }
+        installProgram(pathParts[1]);
+    }
+    else if(taskType == "install_project"){
+        appendLogString("install project task");
+        qDebug() << "install project task";
+    }
+    else if(taskType == "uninstall_program"){
+//        appendLogString("uninstall program task");
+//        qDebug() << "uninstall program task";
+//        uninstallProgram("");
+    }
+    else if(taskType == "uninstall_project"){
+//        appendLogString("uninstall project task");
+//        qDebug() << "uninstall project task";
+    }
+    else if(taskType == "upload"){
+//        appendLogString("upload task");
+//        qDebug() << "upload task";
+    }
+    else if(taskType == "delete"){
+//        appendLogString("delete task");
+//        qDebug() << "delete task";
+    }
+    else if(taskType == "restart"){
+//        appendLogString("restart task");
+//        qDebug() << "restart task";
+//        restart();
+    }
+}
+
+void Dialog::installProgram(QString path)
+{
+    qDebug(qPrintable(QString("install task: ") + path));
+    QString wbPath = ui->lineEdit_wbPath->text();
+    QUrl fileUrl(wbPath+path);
+    appendLogString("download path: \"" + fileUrl.toString() + "\"");
+    qDebug() << fileUrl;
+    QNetworkRequest request(fileUrl);
+    nam->get(request);
+
+}
+
+void Dialog::uninstallProgram(QString path)
+{
+
+}
+
+void Dialog::restart()
+{
+
+}
+
+QString Dialog::saveFileName(const QUrl &url)
+{
+    QString path = url.path();
+    QString basename = QFileInfo(path).fileName();
+
+    if (basename.isEmpty())
+        basename = "download";
+
+    if (QFile::exists(basename)) {
+        // already exists, don't overwrite
+        int i = 0;
+        basename += '.';
+        while (QFile::exists(basename + QString::number(i)))
+            ++i;
+
+        basename += QString::number(i);
+    }
+
+    //basename = "download\\" + basename;
+
+    return basename;
+}
+
+bool Dialog::saveToDisk(const QString &filename, QIODevice *data)
+{
+    QString rootPath = ui->lineEditRootPath->text();
+    QDir().mkdir(rootPath + "/download/");
+    QString filePath = rootPath + "/download/" + filename;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        appendLogString(QString("Could not open %1 for writing: %2\n")
+                        .arg(filePath).arg(file.errorString()));
+        return false;
+    }
+
+    file.write(data->readAll());
+    file.close();
+
+    return true;
+}
+
+bool Dialog::isHttpRedirect(QNetworkReply *reply)
+{
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    return statusCode == 301 || statusCode == 302 || statusCode == 303
+           || statusCode == 305 || statusCode == 307 || statusCode == 308;
+}
+
+
+void Dialog::zip(QString filename , QString zip_filename)
+{
+   QFile infile(filename);
+   QFile outfile(zip_filename);
+   infile.open(QIODevice::ReadOnly);
+   outfile.open(QIODevice::WriteOnly);
+   QByteArray uncompressed_data = infile.readAll();
+   QByteArray compressed_data = qCompress(uncompressed_data, 9);
+   outfile.write(compressed_data);
+   infile.close();
+   outfile.close();
+}
+
+void Dialog::unZip(QString zip_filename , QString filename)
+{
+   QFile infile(zip_filename);
+   QFile outfile(filename);
+   infile.open(QIODevice::ReadOnly);
+   outfile.open(QIODevice::WriteOnly);
+   QByteArray uncompressed_data = infile.readAll();
+   QByteArray compressed_data = qUncompress(uncompressed_data);
+   outfile.write(compressed_data);
+   infile.close();
+   outfile.close();
 }
