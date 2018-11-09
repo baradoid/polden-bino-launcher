@@ -117,7 +117,8 @@ private:
     void webLogin();
     void webSendAlive();
     void webSendTasks();
-    void webUploadTodayLog(QString todayLogPath);
+    bool webUploadTodayLogAsMultiPart(QString todayLogPath);
+    void webUploadTodayLogAsRequest(QString todayLogPath);
 
     void processTasks(QString);
     void processTask(QString);
@@ -129,7 +130,7 @@ private:
     QString saveFileName(const QUrl &url);
     static bool isHttpRedirect(QNetworkReply *reply);
 
-    void zip(QString filename , QString zip_filename);
+    bool zip(QString filename , QString zip_filename);
     void unZip(QString zip_filename , QString filename);
 
 
