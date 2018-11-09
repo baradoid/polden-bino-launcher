@@ -15,6 +15,8 @@
 #include <QUrlQuery>
 #include <QPair>
 
+#include <QHttpMultiPart>
+#include <QHttpPart>
 //#include <foldercompressor.h>
 //#define QUAZIP_STATIC
 
@@ -812,12 +814,24 @@ void Dialog::appendLogString(QString str)
     appendLogFileString(logString);
 }
 
+QString Dialog::todayLogName()
+{
+    return QDate::currentDate().toString("yyyy-MM-dd")+".txt";
+}
+
+QString Dialog::todayLogPath()
+{
+    QString pathStr = ui->lineEditLogPath->text();
+    pathStr += "/" + todayLogName();
+    return pathStr;
+}
+
 void Dialog::appendLogFileString(QString logString)
 {
     QString pathStr = ui->lineEditLogPath->text();
     if(QDir().mkpath(pathStr) == true){
 
-        QString logFileName = QDate::currentDate().toString("yyyy-MM-dd")+".txt";
+        QString logFileName = todayLogName();
         pathStr + logFileName;
         //qDebug() << "creates path ok " << qPrintable(pathStr + "/" + logFileName);
         QFile f(pathStr + "/" + logFileName);
@@ -1207,6 +1221,17 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                     QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
                     QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
                     webState = connected;
+
+                    //upload today log
+
+                    QString tlPath = todayLogPath();
+                    //QString pathStr = ui->lineEditLogPath->text();
+                    QFileInfo fi(tlPath);
+                    QString todayLogZipPath = fi.absoluteDir().absolutePath() + "/" + fi.baseName() + ".zip";
+                    zip(tlPath, todayLogZipPath);
+                    webUploadTodayLog(todayLogZipPath);
+
+
                 }
                 else{
                     appendLogString("WEB: no guid returned");
@@ -1261,6 +1286,18 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 
             QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
         }
+        else if(reqStr.endsWith("upload_logs.php")){
+            if(repl->error() == QNetworkReply::NoError){
+                qDebug() << "upload_logs finished success:" << repl->readAll();
+
+            }
+            else{
+                qDebug() << "upload_logs finished " << repl->errorString();
+
+            }
+
+
+        }
         else{
             //qDebug() << "unknown req: " << qPrintable(readed);
 //            QString filename = saveFileName(url);
@@ -1292,19 +1329,7 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                         QString fileOutPath = rootPath + "/" + fi.baseName();
                         QDir().mkdir(fileOutPath);
 
-
-
-                        QProcess *unZipProc = new QProcess(this);
-                        unZipProc->setWorkingDirectory(fileOutPath);
-                        unZipProc->start("unzip", QStringList(filePath));
-                        unZipProc->waitForStarted(-1);
-                        //unZipProc->waitForFinished(-1);
-                        connect(unZipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                            [=](int exitCode, QProcess::ExitStatus exitStatus){
-                                qDebug("lala");
-                            });
-
-
+                        unZip(filePath, fileOutPath);
                     }
                 }
             }
@@ -1393,6 +1418,77 @@ void Dialog::webSendTasks()
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
     nam->post(request, params.toString().toLatin1());
+}
+
+void Dialog::webUploadTodayLog(QString todayLogPath)
+{
+    QHttpMultiPart * data = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+    QHttpPart part;
+    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+    part.setHeader(QNetworkRequest::ContentDispositionHeader,  QVariant("form-data; name=\"text\""));
+    QUrlQuery params;
+    params.addQueryItem("guid", guid.toLatin1());
+    //QString body = QString("guid=") + guid;
+    //part.setBody( body.toLatin1());
+    part.setBody( params.toString().toLatin1());
+    //qDebug() << params.toString().toLatin1();
+    //part.setRawHeader("Authorization", body.toLatin1());
+    data->append(part);
+
+    QHttpPart filePart;
+    filePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/octet-stream"));
+    filePart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("multipart/form-data; name=\"log\"; filename=\"log.zip\""));
+    filePart.setRawHeader("Content-Transfer-Encoding","binary");
+
+    QFile *file = new QFile(todayLogPath);
+    if(file->open(QIODevice::ReadOnly) == false){
+        appendLogString("WEB: error today log file open");
+        return;
+    }
+    QByteArray ba = file->readAll();
+
+//    filePart.setBodyDevice(file);
+    data->append(filePart);
+
+    QString wbPath = ui->lineEdit_wbPath->text();
+    nam->post(QNetworkRequest(QUrl(wbPath+"/bino/upload_logs.php")), data);
+
+    file->close();
+
+//    //QString wbPath = ui->lineEdit_wbPath->text();
+//    QUrlQuery params;
+//    params.addQueryItem("guid", guid.toLatin1());
+//    params.addQueryItem("data", ba);
+//    //params.addQueryItem();
+
+//    QNetworkRequest request;
+//    request.setUrl(QUrl(wbPath+"/bino/upload_logs.php"));
+//    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+
+////    //nam->post(request, params.toString().toLatin1());
+//    nam->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
+
+
+//    QNetworkRequest request(QUrl(wbPath+"/bino/upload_logs.php")); //our server with php-script
+//     QString bound="margin"; //name of the boundary
+//     //according to rfc 1867 we need to put this string here:
+//     QByteArray data = ("--margin\r\n");
+//     data.append("Content-Disposition: form-data; name=\"upload\"; filename=\"log.zip\"\r\n");
+//     data.append("Content-Type: application/octet-stream\r\n\r\n");
+//     data.append(body.toLatin1());
+
+////     QFile file(fileInfo.absoluteFilePath());
+////     if (!file.open(QIODevice::ReadOnly))
+////     return;
+//     data.append(file->readAll()); //let's read the file
+//     data.append("\r\n");
+//     data.append("--margin--\r\n"); //closing boundary according to rfc 1867
+//     request.setRawHeader("Content-Type","multipart/form-data; boundary=margin");
+//     request.setRawHeader("Content-Length", QString::number(data.length()).toUtf8());
+//     //connect(manager, SIGNAL(finished(QNetworkReply*)), SLOT(sendingFinished(QNetworkReply*)));
+//     QNetworkReply *reply = nam->post(request,data);
+
 }
 
 void Dialog::on_lineEdit_wbPath_editingFinished()
@@ -1558,30 +1654,37 @@ bool Dialog::isHttpRedirect(QNetworkReply *reply)
 }
 
 
-void Dialog::zip(QString filename , QString zip_filename)
+void Dialog::zip(QString filename, QString zip_filename)
 {
-   QFile infile(filename);
-   QFile outfile(zip_filename);
-   infile.open(QIODevice::ReadOnly);
-   outfile.open(QIODevice::WriteOnly);
-   QByteArray uncompressed_data = infile.readAll();
-   QByteArray compressed_data = qCompress(uncompressed_data, 9);
-   outfile.write(compressed_data);
-   infile.close();
-   outfile.close();
+    qDebug() << "compress " << qPrintable(filename) << " to "
+             << qPrintable(zip_filename);
+    QProcess *zipProc = new QProcess(this);
+    //zipProc->setWorkingDirectory(fileOutPath);
+    QStringList pars;
+    pars.append("-9");
+    pars.append("-j");
+    pars.append(zip_filename);
+    pars.append(filename);
+    zipProc->start("zip", pars);
+    zipProc->waitForStarted(-1);
+    //unZipProc->waitForFinished(-1);
+    connect(zipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        [=](int exitCode, QProcess::ExitStatus exitStatus){
+            qDebug("zipProc finished");
+        });
 }
 
-void Dialog::unZip(QString zip_filename , QString filename)
+void Dialog::unZip(QString zip_filename , QString outPath)
 {
-   QFile infile(zip_filename);
-   QFile outfile(filename);
-   infile.open(QIODevice::ReadOnly);
-   outfile.open(QIODevice::WriteOnly);
-   QByteArray uncompressed_data = infile.readAll();
-   QByteArray compressed_data = qUncompress(uncompressed_data);
-   outfile.write(compressed_data);
-   infile.close();
-   outfile.close();
+    QProcess *unZipProc = new QProcess(this);
+    unZipProc->setWorkingDirectory(outPath);
+    unZipProc->start("unzip", QStringList(zip_filename));
+    unZipProc->waitForStarted(-1);
+    //unZipProc->waitForFinished(-1);
+    connect(unZipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        [=](int exitCode, QProcess::ExitStatus exitStatus){
+            qDebug("unZipProc finished");
+        });
 }
 
 //bool extract(const QString & filePath, const QString & extDirPath, const QString & singleFileName)

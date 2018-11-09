@@ -90,6 +90,8 @@ private:
     int wdNoClientsTimeSecs;
     bool bUnityStarted;
 
+    QString todayLogName();
+    QString todayLogPath();
     void appendLogString(QString str);
     void appendLogFileString(QString str);
 
@@ -115,6 +117,7 @@ private:
     void webLogin();
     void webSendAlive();
     void webSendTasks();
+    void webUploadTodayLog(QString todayLogPath);
 
     void processTasks(QString);
     void processTask(QString);
