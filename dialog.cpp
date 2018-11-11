@@ -12,11 +12,6 @@
 #include <windows.h>
 #include <QRadioButton>
 
-#include <QUrlQuery>
-#include <QPair>
-
-#include <QHttpMultiPart>
-#include <QHttpPart>
 //#include <foldercompressor.h>
 //#define QUAZIP_STATIC
 
@@ -35,8 +30,7 @@ Dialog::Dialog(QWidget *parent) :
     enc1Offset(0), enc2Offset(0),
     distanceOverThreshCnt(0),
     lastDistTreshState(false),
-    comPacketsRcvd(0), comErrorPacketsRcvd(0),
-    webState(idle)
+    comPacketsRcvd(0), comErrorPacketsRcvd(0)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -234,16 +228,31 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEdit_wbUser->setText(wbUser);
     ui->lineEdit_wbPass->setText(wbPass);
 
-    nam = new QNetworkAccessManager(this);
-    connect(nam, SIGNAL(finished(QNetworkReply*)),
-                this, SLOT(handleNamReplyFinished(QNetworkReply*)));
+    connect(ui->lineEdit_wbPath, &QLineEdit::editingFinished, [=](){
+        qDebug() << "on_lineEdit_wbPath_editingFinished";
+        QString wbPath = ui->lineEdit_wbPath->text();
+        settings.setValue("webManger/path", wbPath);
+        web->wbPath = wbPath;
+    });
+    connect(ui->lineEdit_wbUser, &QLineEdit::editingFinished, [=](){
+        qDebug() << "on_lineEdit_wbUser_editingFinished";
+        QString wbUser = ui->lineEdit_wbUser->text();
+        settings.setValue("webManger/user", wbUser);
+        web->wbUser = wbUser;
+    });
+    connect(ui->lineEdit_wbPass, &QLineEdit::editingFinished, [=](){
+        qDebug() << "on_lineEdit_wbPass_editingFinished";
+        QString wbPass = ui->lineEdit_wbPass->text();
+        settings.setValue("webManger/pass", wbPass);
+        web->wbPass = wbPass;
+    });
 
     QPalette palette;
     palette.setColor(QPalette::Base,Qt::gray);
     ui->lineEdit_manserver_stat->setPalette(palette);
     ui->lineEdit_manserver_stat->setText("n/a");
 
-    QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
+    //QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
 
     //root dir
     QString rootPath = settings.value("rootPath").toString();
@@ -252,9 +261,15 @@ Dialog::Dialog(QWidget *parent) :
     }
     if(QDir(rootPath).exists() == false){
         QDir().mkdir(rootPath);
-    }
-
+    }    
     ui->lineEditRootPath->setText(rootPath);
+
+    connect(ui->lineEditRootPath, &QLineEdit::editingFinished,
+            [=](){
+        web->rootPath = ui->lineEditRootPath->text();
+
+    });
+
     connect(ui->pushButtonSelectRootPath, &QPushButton::clicked,
         [=](){
         QString str = QFileDialog::getExistingDirectory(this, tr("Select root dir"),
@@ -268,6 +283,23 @@ Dialog::Dialog(QWidget *parent) :
         }
     });
 
+    web = new Web(this);
+    web->rootPath = rootPath;
+    web->wbUser = wbUser;
+    web->wbPass = wbPass;
+    web->wbPath = wbPath;
+
+    connect(web, &Web::msg, [=](QString msg){
+        appendLogString("WEB:"+msg);
+    });
+    connect(web, &Web::connSuccess, [=](){
+        setConnectionSuccess();
+    });
+    connect(web, &Web::connError, [=](QString msg){
+        setConnectionError(msg);
+    });
+
+    web->start();
 }
 
 
@@ -1188,183 +1220,6 @@ void Dialog::on_pushButtonFindWnd_clicked()
     }
 }
 
-
-void Dialog::handleNamReplyFinished(QNetworkReply* repl)
-{
-        QList<QNetworkReply::RawHeaderPair> headPairs = repl->rawHeaderPairs();
-
-//        foreach(QNetworkReply::RawHeaderPair  p,  headPairs){
-//            qDebug() << p.first << p.second;
-//        }
-
-        //qDebug() << readed;
-        //qDebug() << uq.queryPairDelimiter() << uq.queryValueDelimiter();
-        //uq.setQueryDelimiters('=', '|');
-        //qDebug() << uq.queryPairDelimiter() << uq.queryValueDelimiter();
-        //uq.allQueryItemValues()
-        //qDebug() << "GUID: " << uq.queryItemValue("guid").toLatin1();
-
-        QString reqStr = repl->request().url().toString();
-        //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-
-        if(reqStr.endsWith("login.php")){
-            if(repl->error() == QNetworkReply::NoError){
-                QString readed(repl->readAll());
-                readed.replace('|', '&');
-                QUrlQuery uq(readed);
-
-                guid = uq.queryItemValue("guid");
-                appendLogString("WEB: " + readed);
-                if(guid.isEmpty() == false){
-                    appendLogString("WEB: connection success");
-                    setConnectionSuccess();
-                    QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
-                    QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
-                    webState = connected;
-
-                    //upload today log
-
-                    QString tlPath = todayLogPath();
-                    //QString pathStr = ui->lineEditLogPath->text();
-                    QFileInfo fi(tlPath);
-                    QString todayLogZipPath = fi.absoluteDir().absolutePath() + "/" + fi.baseName() + ".zip";
-                    if(zip(tlPath, todayLogZipPath) == false){
-                        appendLogString("WEB: zip file " + tlPath + " failed");
-                    }
-                    else{
-                        if(webUploadTodayLogAsMultiPart(todayLogZipPath) == true)
-                            appendLogString("WEB: today log upload POST success:" + tlPath);
-                        else
-                            appendLogString("WEB: today log upload POST failed:" + tlPath);
-                    }
-                    //webUploadTodayLogAsRequest(todayLogZipPath);
-                }
-                else{
-                    appendLogString("WEB: no guid returned");
-                    setConnectionError("no guid returned");
-                    QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
-                }
-            }
-            else{
-                setConnectionError(repl->errorString());
-                QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
-            }
-        }
-        else if(reqStr.endsWith("tasks.php")){
-            if(repl->error() == QNetworkReply::NoError){
-                QString readed(repl->readAll());
-                readed.replace('|', '&');
-                QUrlQuery uq(readed);
-
-                //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-                if(readed.contains("Error") == false){
-                    QString tasks("WEB: incoming tasks: ");
-                    tasks += readed;
-                    appendLogString(tasks);
-                    processTasks(readed);
-                }
-                else{
-                    appendLogString(QString("WEB: task request fail: \"")+readed+("\""));
-                }
-            }
-            else{
-                appendLogString("WEB: error repl on tasks req: " + repl->errorString());
-                setConnectionError(repl->errorString());
-            }
-            QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
-
-        }
-        else if(reqStr.endsWith("alive.php")){
-
-            if(repl->error() == QNetworkReply::NoError){
-                QString readed(repl->readAll());
-                readed.replace('|', '&');
-                QUrlQuery uq(readed);
-
-                if(readed == "ok"){
-                    setConnectionSuccess();
-                }
-                else{
-                    //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-                    appendLogString("WEB: unexpected repl on alive req: " + readed);
-                    setConnectionError("unexpected response");
-                }
-            }
-            else{
-                appendLogString("WEB: error repl on alive req: " + repl->errorString());
-                setConnectionError(repl->errorString());
-            }
-
-            QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
-        }
-        else if(reqStr.endsWith("upload_logs.php")){
-            if(repl->error() == QNetworkReply::NoError){
-                QString ret = repl->readAll();
-                if(ret.contains("ok")){
-                    appendLogString("WEB: today log upload success");
-                }
-                else{
-                    appendLogString("WEB: today log upload fail");
-                }
-
-                qDebug() << "upload_logs finished success:" << repl->readAll();
-
-            }
-            else{
-                appendLogString("WEB: today log upload failed");
-                qDebug() << "upload_logs finished " << repl->errorString();
-
-            }
-
-
-        }
-        else{
-            //qDebug() << "unknown req: " << qPrintable(readed);
-//            QString filename = saveFileName(url);
-//            if (saveToDisk(filename, reply)) {
-//                printf("Download of %s succeeded (saved to %s)\n",
-//                       url.toEncoded().constData(), qPrintable(filename));
-//            }
-
-            QUrl url = repl->url();
-            if(repl->error()){
-//                qDebug("Download of %s failed: %s\n",
-//                        url.toEncoded().constData(),
-//                        qPrintable(repl->errorString()));
-                appendLogString(QString("WEB:Download of %1 failed: %2")
-                                .arg(url.toEncoded().constData())
-                                .arg(qPrintable(repl->errorString())));
-            }
-            else{
-                if (isHttpRedirect(repl)){
-                    fputs("Request was redirected.\n", stderr);
-                }
-                else{
-                    QString filename = saveFileName(url);
-                    if (saveToDisk(filename, repl)) {
-                        qDebug("Download of %s succeeded (saved to %s)\n",
-                               url.toEncoded().constData(), qPrintable(filename));
-
-                        QString rootPath = ui->lineEditRootPath->text();
-                        QString filePath = rootPath + "/download/" + filename;
-
-                        QFileInfo  fi(filename);
-                        QString fileOutPath = rootPath + "/" + fi.baseName();
-                        QDir().mkdir(fileOutPath);
-
-                        unZip(filePath, fileOutPath);
-                    }
-                }
-            }
-        }
-
-        if(webState == idle){
-
-        }
-        else if(webState == connected){
-        }   
-}
-
 void Dialog::setConnectionError(QString errStr)
 {
     //qDebug() << repl->error() << qPrintable(errStr);
@@ -1382,338 +1237,6 @@ void Dialog::setConnectionSuccess()
     palette.setColor(QPalette::Base,Qt::green);
     //palette.setColor(QPalette::Text,Qt::white);
     ui->lineEdit_manserver_stat->setPalette(palette);
-}
-
-void Dialog::handleWbLoginTimeout()
-{
-    webLogin();
-}
-
-void Dialog::handlePostAliveTimeout()
-{
-    webSendAlive();
-}
-void Dialog::handlePostTasksTimeout()
-{
-    webSendTasks();
-}
-
-void Dialog::webLogin()
-{
-    QString wbUser = ui->lineEdit_wbUser->text();
-    QString wbPass = ui->lineEdit_wbPass->text();
-
-    QString wbPath = ui->lineEdit_wbPath->text();
- //   QByteArray requestString = "login=bino&psswd=bino12345";
-    QUrlQuery params;
-    params.addQueryItem("login", wbUser);
-    params.addQueryItem("psswd", wbPass);
-
-
-    QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/login.php"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
-
-    nam->post(request, params.toString().toLatin1());
-}
-
-void Dialog::webSendAlive()
-{
-    QString wbPath = ui->lineEdit_wbPath->text();
-    QUrlQuery params;
-    params.addQueryItem("guid", guid.toLatin1());
-
-    QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/alive.php"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
-
-    nam->post(request, params.toString().toLatin1());
-}
-
-void Dialog::webSendTasks()
-{
-    QString wbPath = ui->lineEdit_wbPath->text();
-    QUrlQuery params;
-    params.addQueryItem("guid", guid.toLatin1());
-
-    QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/tasks.php"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
-
-    nam->post(request, params.toString().toLatin1());
-}
-
-void Dialog::webUploadTodayLogAsRequest(QString todayLogPath)
-{
-    QFile file(todayLogPath);
-    if(file.open(QIODevice::ReadOnly) == false){
-        appendLogString("WEB: error today log file open");
-        return;
-    }
-    QByteArray ba = file.readAll();
-    qDebug("ba: %d", ba.length());
-
-
-    QString wbPath = ui->lineEdit_wbPath->text();
-    QUrlQuery params;
-    params.addQueryItem("guid", guid.toLatin1());
-    //params.addQueryItem();
-    //Content-Type: application/octet-stream
-    //Content-Disposition: attachment
-
-    params.addQueryItem("data", ba.toHex());
-    //params.addQueryItem();
-
-    QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/upload_logs.php"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
-
-    nam->post(request, params.toString().toLatin1());
-    //nam->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
-}
-
-bool Dialog::webUploadTodayLogAsMultiPart(QString todayLogPath)
-{
-    QString wbPath = ui->lineEdit_wbPath->text();
-    QHttpMultiPart * data = new QHttpMultiPart(QHttpMultiPart::FormDataType);
-
-    QHttpPart part;
-    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"guid\""));
-    //QUrlQuery params;
-    //params.addQueryItem("guid", guid.toLatin1());
-    QString body = QString("guid=") + guid + "\r\n\r\n";
-    part.setBody( guid.toLatin1());
-    //part.setBody( params.toString().toLatin1());
-    //qDebug() << params.toString().toLatin1();
-    //part.setRawHeader("guid", guid.toLatin1());
-    //part.setRawHeader(body.toLatin1(), "");
-    data->append(part);
-
-    QHttpPart filePart;
-    filePart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("multipart/form-data; name=\"data\"; filename=\"log.zip\""));
-    filePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-zip-compressed"));
-    filePart.setRawHeader("Content-Transfer-Encoding","binary");
-
-    QFile *file = new QFile(todayLogPath);
-    if(file->open(QIODevice::ReadOnly) == false){
-        appendLogString("WEB: error today log file open");
-        return false;
-    }
-    //QByteArray ba = file->readAll();
-
-    filePart.setBodyDevice(file);
-    data->append(filePart);
-
-//    QString wbPath = ui->lineEdit_wbPath->text();
-    nam->post(QNetworkRequest(QUrl(wbPath+"/bino/upload_logs.php")), data);
-
-//    file->close();
-    return true;
-}
-
-void Dialog::on_lineEdit_wbPath_editingFinished()
-{
-    qDebug() << "on_lineEdit_wbPath_editingFinished";
-
-    QString wbPath = ui->lineEdit_wbPath->text();
-    settings.setValue("webManger/path", wbPath);
-}
-
-
-void Dialog::on_lineEdit_wbUser_editingFinished()
-{
-    qDebug() << "on_lineEdit_wbUser_editingFinished";
-    QString wbUser = ui->lineEdit_wbUser->text();
-    settings.setValue("webManger/user", wbUser);
-}
-
-void Dialog::on_lineEdit_wbPass_editingFinished()
-{
-    qDebug() << "on_lineEdit_wbPass_editingFinished";
-    QString wbPass = ui->lineEdit_wbPass->text();
-    settings.setValue("webManger/pass", wbPass);
-}
-
-
-void Dialog::processTasks(QString uq)
-{
-    qDebug() << qPrintable(uq);
-    QStringList strList = uq.split(";");
-
-    foreach(QString part, strList) {
-        //qDebug() << "task: " << part;
-        processTask(part);
-        //qDebug() << " ";
-    }
-}
-
-void Dialog::processTask(QString task)
-{
-    QStringList taskParts = task.split("&");
-    if(taskParts.count() != 3){
-        QString errStr = "WEB:Err task: " + task;
-        appendLogString(errStr);
-        return;
-    }
-    QString taskType = taskParts[1];
-    if(taskType == "install_program"){
-        appendLogString("WEB:install program task");
-        //qDebug() << "install program task " << taskParts;
-        QStringList pathParts = taskParts[2].split("!");
-        //qDebug() << "install program task path " << pathParts;
-        if(pathParts.count() != 2){
-            QString errStr = "WEB:Err install task path: " + taskParts[2];
-            appendLogString(errStr);
-            return;
-        }
-        installProgram(pathParts[1]);
-    }
-    else if(taskType == "install_project"){
-        appendLogString("WEB:install project task");
-        //qDebug() << "install project task";
-    }
-    else if(taskType == "uninstall_program"){
-        appendLogString("WEB:uninstall program");
-//        appendLogString("uninstall program task");
-//        qDebug() << "uninstall program task";
-//        uninstallProgram("");
-    }
-    else if(taskType == "uninstall_project"){
-        appendLogString("WEB:uninstall project");
-//        appendLogString("uninstall project task");
-//        qDebug() << "uninstall project task";
-    }
-    else if(taskType == "upload"){
-        appendLogString("WEB:upload");
-//        appendLogString("upload task");
-//        qDebug() << "upload task";
-    }
-    else if(taskType == "delete"){
-        appendLogString("WEB:delete");
-//        appendLogString("delete task");
-//        qDebug() << "delete task";
-    }
-    else if(taskType == "restart"){
-        appendLogString("WEB:restart task");
-//        qDebug() << "restart task";
-//        restart();
-    }
-}
-
-void Dialog::installProgram(QString path)
-{
-    //qDebug(qPrintable(QString("install task: ") + path));
-    QString wbPath = ui->lineEdit_wbPath->text();
-    QUrl fileUrl(wbPath+path);
-    appendLogString("WEB:download path: \"" + fileUrl.toString() + "\"");
-    qDebug() << fileUrl;
-    QNetworkRequest request(fileUrl);
-
-    QNetworkReply *repl =  nam->get(request);
-    connect(repl, &QNetworkReply::downloadProgress,
-            [](qint64 bytesReceived, qint64 bytesTotal){
-        qDebug("download process %d %d", bytesReceived, bytesTotal);
-    });
-
-
-}
-
-void Dialog::uninstallProgram(QString path)
-{
-
-}
-
-void Dialog::restart()
-{
-
-}
-
-QString Dialog::saveFileName(const QUrl &url)
-{
-    QString path = url.path();
-    QString basename = QFileInfo(path).fileName();
-
-    if (basename.isEmpty())
-        basename = "download";
-
-    if (QFile::exists(basename)) {
-        // already exists, don't overwrite
-        int i = 0;
-        basename += '.';
-        while (QFile::exists(basename + QString::number(i)))
-            ++i;
-
-        basename += QString::number(i);
-    }
-
-    //basename = "download\\" + basename;
-
-    return basename;
-}
-
-bool Dialog::saveToDisk(const QString &filename, QIODevice *data)
-{
-    QString rootPath = ui->lineEditRootPath->text();
-    QDir().mkdir(rootPath + "/download/");
-    QString filePath = rootPath + "/download/" + filename;
-
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly)) {
-        appendLogString(QString("Could not open %1 for writing: %2\n")
-                        .arg(filePath).arg(file.errorString()));
-        return false;
-    }
-
-    file.write(data->readAll());
-    file.close();
-
-    return true;
-}
-
-bool Dialog::isHttpRedirect(QNetworkReply *reply)
-{
-    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    return statusCode == 301 || statusCode == 302 || statusCode == 303
-           || statusCode == 305 || statusCode == 307 || statusCode == 308;
-}
-
-
-bool Dialog::zip(QString filename, QString zip_filename)
-{
-    if(QFile("zip.exe").exists() == false){
-        appendLogString("zip.exe not found");
-        return false;
-    }
-    qDebug() << "compress " << qPrintable(filename) << " to "
-             << qPrintable(zip_filename);
-    QProcess *zipProc = new QProcess(this);
-    //zipProc->setWorkingDirectory(fileOutPath);
-    QStringList pars;
-    pars.append("-9");
-    pars.append("-j");
-    pars.append(zip_filename);
-    pars.append(filename);
-    zipProc->start("zip.exe", pars);
-    zipProc->waitForStarted(-1);
-    //unZipProc->waitForFinished(-1);
-    connect(zipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-        [=](int exitCode, QProcess::ExitStatus exitStatus){
-            qDebug("zipProc finished");
-        });
-    return true;
-}
-
-void Dialog::unZip(QString zip_filename , QString outPath)
-{
-    QProcess *unZipProc = new QProcess(this);
-    unZipProc->setWorkingDirectory(outPath);
-    unZipProc->start("unzip", QStringList(zip_filename));
-    unZipProc->waitForStarted(-1);
-    //unZipProc->waitForFinished(-1);
-    connect(unZipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-        [=](int exitCode, QProcess::ExitStatus exitStatus){
-            qDebug("unZipProc finished");
-        });
 }
 
 //bool extract(const QString & filePath, const QString & extDirPath, const QString & singleFileName)

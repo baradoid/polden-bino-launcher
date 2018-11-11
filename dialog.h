@@ -12,8 +12,7 @@
 #include <QTableWidgetItem>
 #include <QCheckBox>
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
+#include "web.h"
 
 namespace Ui {
 class Dialog;
@@ -40,7 +39,7 @@ signals:
     void mousePressedSignal();
 };
 
-typedef enum { idle, connected } TWebState;
+//typedef enum { idle, connected } TWebState;
 
 class Dialog : public QDialog
 {
@@ -108,31 +107,12 @@ private:
 
     QTimer *writeCbParamsTimer;
     uint8_t cbWriteParamsCount;
-    QNetworkAccessManager *nam;
-    TWebState webState;
-    QString guid;
+    //TWebState webState;
+//    QString guid;
+    Web *web;
 
     void setConnectionError(QString errStr);
     void setConnectionSuccess();
-    void webLogin();
-    void webSendAlive();
-    void webSendTasks();
-    bool webUploadTodayLogAsMultiPart(QString todayLogPath);
-    void webUploadTodayLogAsRequest(QString todayLogPath);
-
-    void processTasks(QString);
-    void processTask(QString);
-
-    void installProgram(QString);
-    void uninstallProgram(QString);
-    void restart();
-    bool saveToDisk(const QString &filename, QIODevice *data);
-    QString saveFileName(const QUrl &url);
-    static bool isHttpRedirect(QNetworkReply *reply);
-
-    bool zip(QString filename , QString zip_filename);
-    void unZip(QString zip_filename , QString filename);
-
 
 private slots:
     void handleReadPendingDatagrams();
@@ -167,14 +147,6 @@ private slots:
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
 
-    void handleNamReplyFinished(QNetworkReply*);
-
-    void handleWbLoginTimeout();
-    void handlePostAliveTimeout();
-    void handlePostTasksTimeout();
-    void on_lineEdit_wbPath_editingFinished();
-    void on_lineEdit_wbUser_editingFinished();
-    void on_lineEdit_wbPass_editingFinished();
 };
 
 #endif // DIALOG_H
