@@ -1219,7 +1219,7 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                     appendLogString("WEB: connection success");
                     setConnectionSuccess();
                     QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
-                    //QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
+                    QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
                     webState = connected;
 
                     //upload today log
@@ -1257,10 +1257,15 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
                 QUrlQuery uq(readed);
 
                 //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-                QString tasks("WEB: incoming tasks: ");
-                tasks += readed;
-                appendLogString(tasks);                
-                processTasks(readed);
+                if(readed.contains("Error") == false){
+                    QString tasks("WEB: incoming tasks: ");
+                    tasks += readed;
+                    appendLogString(tasks);
+                    processTasks(readed);
+                }
+                else{
+                    appendLogString(QString("WEB: task request fail: \"")+readed+("\""));
+                }
             }
             else{
                 appendLogString("WEB: error repl on tasks req: " + repl->errorString());
@@ -1323,9 +1328,12 @@ void Dialog::handleNamReplyFinished(QNetworkReply* repl)
 
             QUrl url = repl->url();
             if(repl->error()){
-                fprintf(stderr, "Download of %s failed: %s\n",
-                        url.toEncoded().constData(),
-                        qPrintable(repl->errorString()));
+//                qDebug("Download of %s failed: %s\n",
+//                        url.toEncoded().constData(),
+//                        qPrintable(repl->errorString()));
+                appendLogString(QString("WEB:Download of %1 failed: %2")
+                                .arg(url.toEncoded().constData())
+                                .arg(qPrintable(repl->errorString())));
             }
             else{
                 if (isHttpRedirect(repl)){
@@ -1533,9 +1541,9 @@ void Dialog::processTasks(QString uq)
     QStringList strList = uq.split(";");
 
     foreach(QString part, strList) {
-        qDebug() << "task: " << part;
+        //qDebug() << "task: " << part;
         processTask(part);
-        qDebug() << " ";
+        //qDebug() << " ";
     }
 }
 
@@ -1543,46 +1551,50 @@ void Dialog::processTask(QString task)
 {
     QStringList taskParts = task.split("&");
     if(taskParts.count() != 3){
-        QString errStr = "Err task: " + task;
+        QString errStr = "WEB:Err task: " + task;
         appendLogString(errStr);
         return;
     }
     QString taskType = taskParts[1];
     if(taskType == "install_program"){
-        appendLogString("install program task");
-        qDebug() << "install program task " << taskParts;
+        appendLogString("WEB:install program task");
+        //qDebug() << "install program task " << taskParts;
         QStringList pathParts = taskParts[2].split("!");
-        qDebug() << "install program task path " << pathParts;
+        //qDebug() << "install program task path " << pathParts;
         if(pathParts.count() != 2){
-            QString errStr = "Err install task path: " + taskParts[2];
+            QString errStr = "WEB:Err install task path: " + taskParts[2];
             appendLogString(errStr);
             return;
         }
         installProgram(pathParts[1]);
     }
     else if(taskType == "install_project"){
-        appendLogString("install project task");
-        qDebug() << "install project task";
+        appendLogString("WEB:install project task");
+        //qDebug() << "install project task";
     }
     else if(taskType == "uninstall_program"){
+        appendLogString("WEB:uninstall program");
 //        appendLogString("uninstall program task");
 //        qDebug() << "uninstall program task";
 //        uninstallProgram("");
     }
     else if(taskType == "uninstall_project"){
+        appendLogString("WEB:uninstall project");
 //        appendLogString("uninstall project task");
 //        qDebug() << "uninstall project task";
     }
     else if(taskType == "upload"){
+        appendLogString("WEB:upload");
 //        appendLogString("upload task");
 //        qDebug() << "upload task";
     }
     else if(taskType == "delete"){
+        appendLogString("WEB:delete");
 //        appendLogString("delete task");
 //        qDebug() << "delete task";
     }
     else if(taskType == "restart"){
-//        appendLogString("restart task");
+        appendLogString("WEB:restart task");
 //        qDebug() << "restart task";
 //        restart();
     }
@@ -1590,10 +1602,10 @@ void Dialog::processTask(QString task)
 
 void Dialog::installProgram(QString path)
 {
-    qDebug(qPrintable(QString("install task: ") + path));
+    //qDebug(qPrintable(QString("install task: ") + path));
     QString wbPath = ui->lineEdit_wbPath->text();
     QUrl fileUrl(wbPath+path);
-    appendLogString("download path: \"" + fileUrl.toString() + "\"");
+    appendLogString("WEB:download path: \"" + fileUrl.toString() + "\"");
     qDebug() << fileUrl;
     QNetworkRequest request(fileUrl);
 
