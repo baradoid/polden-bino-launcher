@@ -12,6 +12,8 @@ public:
     bool open();
     void close();
 
+    void setAudioEnable(bool);
+
 private:
     QSerialPort serial;
     int recvdComPacks, bytesRecvd;
@@ -22,9 +24,6 @@ private:
 
     void sendCmd(const char* s);
 
-    void setAudioEnable(bool);
-    void on_audioOn_clicked();
-    void on_audioOff_clicked();
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);

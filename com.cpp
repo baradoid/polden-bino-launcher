@@ -90,16 +90,6 @@ void Com::setAudioEnable(bool bEna)
     }
 }
 
-void Com::on_audioOn_clicked()
-{
-    setAudioEnable(true);
-}
-
-void Com::on_audioOff_clicked()
-{
-    setAudioEnable(false);
-}
-
 void Com::sendCmd(const char* s)
 {
     if(serial.isOpen()){

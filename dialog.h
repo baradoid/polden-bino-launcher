@@ -125,8 +125,6 @@ private slots:
     void on_pushButtonComOpen_clicked();
     void on_pushButton_refreshCom_clicked();
 
-
-    void handleSerialReadyRead();
     void on_pushButtonSet_clicked();
     void on_pushButtonDebugSend_clicked();
     void on_pushButtonWDTest_clicked();

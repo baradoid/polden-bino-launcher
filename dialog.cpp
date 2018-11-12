@@ -134,7 +134,7 @@ Dialog::Dialog(QWidget *parent) :
                 ui->comComboBox->setCurrentIndex(i);
                 on_pushButtonComOpen_clicked();
                 if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
-                    setAudioEnable(true);
+                    com->setAudioEnable(true);
                 //if(ui->checkBoxInitOnStart->isChecked()){
                 //    on_pushButtonInitiate_clicked();
                 //}
@@ -611,7 +611,7 @@ void Dialog::debugTimerOut()
 }
 
 void Dialog::on_pushButtonComOpen_clicked()
-{
+{    
     serial.setBaudRate(115200);
      if(ui->pushButtonComOpen->text() == "open"){
          if(serial.isOpen() == false){
@@ -692,62 +692,6 @@ void Dialog::on_pushButton_refreshCom_clicked()
 
 }
 
-
-void Dialog::processStr(QString str)
-{
-    recvdComPacks++;
-    //qDebug() << str.length() <<":" <<str;
-//    if(str.length() != 41){
-//        str.remove("\r\n");
-//        qDebug() << "string length " << str.length() << "not equal 41" << qPrintable(str);
-//    }
-    QStringList strList = str.split(" ");
-    if(strList.size() >= 3){
-        int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
-        int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
-        int dist = strList[2].toInt(Q_NULLPTR, 10);
-        //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
-        //ui->lineEditEnc1->setText(QString::number(xPos1));
-        //ui->lineEditEnc2->setText(QString::number(xPos2));
-        //ui->lineEditTerm1->setText(QString::number(temp));
-        //qDebug() << xPos1 << xPos2;
-
-        rangeThresh = ui->lineEditRangeThresh->text().toInt();
-
-        //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
-        enc1Val = xPos1;
-        enc2Val = xPos2;
-        distVal = dist;
-
-        sendPosData();
-
-    }
-
-    //appendPosToGraph(xPos);
-
-}
-
-void Dialog::handleSerialReadyRead()
-{
-    QByteArray ba = serial.readAll();
-
-    bytesRecvd += ba.length();
-
-    for(int i=0; i<ba.length(); i++){
-        recvStr.append((char)ba[i]);
-        if(ba[i]=='\n'){
-            //qInfo("strLen %d", recvStr.length());
-            comPacketsRcvd++;
-            //appendLogString(QString("strLen:") + QString::number(recvStr.length()));
-            if(recvStr.length() != 17){
-                comErrorPacketsRcvd++;
-            }
-            processStr(recvStr);
-            recvStr.clear();            
-        }
-    }
-
-}
 
 void Dialog::on_pushButtonSet_clicked()
 {
@@ -951,34 +895,14 @@ QString Dialog::formatSize(qint64 size)
     return QString("%0 %1").arg(outputSize, 0, 'f', 2).arg(units[i]);
 }
 
-void Dialog::sendCmd(const char* s)
-{
-    if(serial.isOpen()){
-        QString debStr(s);
-        debStr.remove('\n');
-        qInfo("send: %s, sended %d", qPrintable(debStr), serial.write(s));
-    }
-}
-
-void Dialog::setAudioEnable(bool bEna)
-{
-    appendLogString(QString("COM: set ") + QString(bEna?"audioOn":"audioOff"));
-    if(bEna){
-        sendCmd("audioOn\n");
-    }
-    else{
-        sendCmd("audioOff\n");
-    }
-}
-
 void Dialog::on_audioOn_clicked()
 {
-    setAudioEnable(true);
+    com->setAudioEnable(true);
 }
 
 void Dialog::on_audioOff_clicked()
 {
-    setAudioEnable(false);
+    com->setAudioEnable(false);
 }
 
 void Dialog::on_checkBoxAudioEnableOnStartup_clicked()
@@ -1146,7 +1070,7 @@ void Dialog::handleWriteCBParamsTimeout()
             cbWriteParamsCount--;
 
             if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
-                setAudioEnable(true);
+                com->setAudioEnable(true);
         }
         else{
             //writeCbParamsTimer->stop();
