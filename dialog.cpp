@@ -300,6 +300,13 @@ Dialog::Dialog(QWidget *parent) :
     });
 
     web->start();
+
+    com = new Com(this);
+    connect(com, SIGNAL(newPosData()), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(com, &Com::msg, [=](QString msg){
+        appendLogString("COM:"+msg);
+    });
+
 }
 
 
@@ -612,11 +619,17 @@ void Dialog::on_pushButtonComOpen_clicked()
              if(comName.length() > 0){
                  //UartThread.requestToStart(comName);
                  serial.setPortName(comName);
+                 com->setPort(comName);
                  if (!serial.open(QIODevice::ReadWrite)) {
                      qDebug("%s port open FAIL", qUtf8Printable(comName));
                      appendLogString(QString("COM: %1 port open FAIL").arg(comName));
                      return;
                  }                 
+                 if (com->open() == false) {
+                     qDebug("%s port open FAIL", qUtf8Printable(comName));
+                     appendLogString(QString("COM: %1 port open FAIL").arg(comName));
+                     return;
+                 }
 //                 qDebug("%s port opened", qUtf8Printable(comName));
                  appendLogString(QString("COM: port %1 opened").arg(serial.portName()));
                  connect(&serial, SIGNAL(readyRead()),
@@ -1324,3 +1337,8 @@ void Dialog::setConnectionSuccess()
 //    return true;
 //}
 
+
+void Dialog::handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist)
+{
+
+}

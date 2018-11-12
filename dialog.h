@@ -13,6 +13,7 @@
 #include <QCheckBox>
 
 #include "web.h"
+#include "com.h"
 
 namespace Ui {
 class Dialog;
@@ -110,6 +111,7 @@ private:
     //TWebState webState;
 //    QString guid;
     Web *web;
+    Com *com;
 
     void setConnectionError(QString errStr);
     void setConnectionSuccess();
@@ -146,6 +148,8 @@ private slots:
     void handleUiUpdate();
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
+
+    void handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
 
 };
 
