@@ -27,8 +27,7 @@ Dialog::Dialog(QWidget *parent) :
     wdNoClientsTimeSecs(0),
     bUnityStarted(false),
     distanceOverThreshCnt(0),
-    lastDistTreshState(false),
-    comPacketsRcvd(0), comErrorPacketsRcvd(0)
+    lastDistTreshState(false)
     //settings("murinets", "binoc-launcher")
 {
     ui->setupUi(this);    
@@ -39,21 +38,31 @@ Dialog::Dialog(QWidget *parent) :
     ui->label_buildTime->setText(compileDateTime);
 
     QString hostName = QHostInfo::localHostName();
-    QString logDirPath = settings.value("log/logPath").toString();
-    if(logDirPath.isEmpty()){
-        logDirPath = QDir::currentPath() + "/logs";
-    }
+//    QString logDirPath = settings.value("log/logPath").toString();
+//    if(logDirPath.isEmpty()){
+//        logDirPath = QDir::currentPath() + "/logs";
+//    }
 
-    if(logDirPath.endsWith(hostName) == false){
-        logDirPath+= "_" + hostName;
-    }
+//    if(logDirPath.endsWith(hostName) == false){
+//        logDirPath+= "_" + hostName;
+//    }
 
+    //root dir
+    QString rootPath = settings.value("rootPath").toString();
+    if(rootPath.isEmpty()){
+        rootPath = QDir::currentPath();
+    }
+    initPathStruct(rootPath);
+    initRootPathControl();
+
+    ui->widget_deleteOldLogsContainer->hide();
     ui->checkBoxLogClearIfSizeExceed->setChecked(settings.value("log/logCLearIfSizeExceed", true).toBool());
 
-    ui->lineEditLogPath->setText(logDirPath);
+    ui->lineEditLogPath->setText(dirStruct.logsDir);
     appendLogFileString("\r\n");
     appendLogFileString("--- start");
-    appendLogString(QString("restore log dir:\"")+(logDirPath.isEmpty()? "n/a":logDirPath)+ "\"");
+    appendLogString(QString("restore root dir:\"")+(dirStruct.rootDir.isEmpty()? "n/a":dirStruct.rootDir)+ "\"");
+    appendLogString(QString("restore log dir:\"")+(dirStruct.logsDir.isEmpty()? "n/a":dirStruct.logsDir)+ "\"");
 
     ui->lineEditHostName->setText(hostName);
     appendLogString(QString("hostname: \"") + hostName + "\"");
@@ -238,37 +247,10 @@ Dialog::Dialog(QWidget *parent) :
 
     //QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
 
-    //root dir
-    QString rootPath = settings.value("rootPath").toString();
-    if(rootPath.isEmpty()){
-        rootPath = QDir::currentPath();
-    }
-    if(QDir(rootPath).exists() == false){
-        QDir().mkdir(rootPath);
-    }    
-    ui->lineEditRootPath->setText(rootPath);
 
-    connect(ui->lineEditRootPath, &QLineEdit::editingFinished,
-            [=](){
-        web->rootPath = ui->lineEditRootPath->text();
-
-    });
-
-    connect(ui->pushButtonSelectRootPath, &QPushButton::clicked,
-        [=](){
-        QString str = QFileDialog::getExistingDirectory(this, tr("Select root dir"),
-                                                        rootPath,
-                                                        QFileDialog::ShowDirsOnly
-                                                        | QFileDialog::DontResolveSymlinks);
-        if(str.isEmpty() == false){
-            settings.setValue("rootPath", str);
-            ui->lineEditRootPath->setText(str);
-            ui->lineEditRootPath->setToolTip(str);
-        }
-    });
 
     web = new Web(this);
-    web->rootPath = rootPath;
+    web->dirStruct = &dirStruct;
     web->wbUser = wbUser;
     web->wbPass = wbPass;
     web->wbPath = wbPath;
@@ -284,8 +266,6 @@ Dialog::Dialog(QWidget *parent) :
     });
 
     web->start();
-
-
 }
 
 
@@ -344,6 +324,59 @@ void Dialog::initComPort()
     }
 }
 
+void Dialog::initRootPathControl()
+{
+
+    connect(ui->lineEditRootPath, &QLineEdit::editingFinished,
+            [=](){
+        QString rootPath = ui->lineEditRootPath->text();
+        //web->rootPath = ui->lineEditRootPath->text();
+        initPathStruct(rootPath);
+
+    });
+
+    connect(ui->pushButtonSelectRootPath, &QPushButton::clicked,
+        [this](){
+        QString rootPath = ui->lineEditRootPath->text();
+        rootPath = QFileDialog::getExistingDirectory(this, tr("Select root dir"),
+                                                        rootPath,
+                                                        QFileDialog::ShowDirsOnly
+                                                        | QFileDialog::DontResolveSymlinks);
+        if(rootPath.isEmpty() == false){
+            settings.setValue("rootPath", rootPath);
+            ui->lineEditRootPath->setText(rootPath);
+            ui->lineEditRootPath->setToolTip(rootPath);
+            initPathStruct(rootPath);
+        }
+    });
+
+    connect(ui->pushButton_showRootPath, &QPushButton::clicked, [=](){
+        QString pathStr = ui->lineEditRootPath->text();
+        if(QDir().mkpath(pathStr) == true){
+            QDesktopServices::openUrl(QUrl::fromLocalFile(pathStr));
+        }
+    });
+}
+
+void Dialog::initPathStruct(QString rootDir)
+{
+    dirStruct.rootDir = rootDir;
+    dirStruct.downloadDir = rootDir + "/download";
+    dirStruct.logsDir = rootDir + "/logs_" + QHostInfo::localHostName();
+
+    QDir().mkdir(dirStruct.rootDir);
+    QDir().mkdir(dirStruct.downloadDir);
+    QDir().mkdir(dirStruct.logsDir);
+
+//    qDebug() << "root dir: \"" << qPrintable(dirStruct.rootDir) << "\"";
+//    qDebug() << "download dir: \"" << qPrintable(dirStruct.downloadDir) << "\"";
+//    qDebug() << "logs dir: \"" << qPrintable(dirStruct.logsDir) <<  "\"";
+
+    ui->lineEditRootPath->setText(dirStruct.rootDir);
+    ui->lineEditLogPath->setText(dirStruct.logsDir);
+
+
+}
 
 void Dialog::initEncTableWidget()
 {
@@ -672,7 +705,7 @@ void Dialog::on_pushButton_refreshCom_clicked()
     QString manufacturer;
     QString serialNumber;
 
-    QString logStr("COM: com ports present: ");
+    QString logStr("COM: ports present in system: ");
     for (const QSerialPortInfo &serialPortInfo : serialPortInfos) {
            description = serialPortInfo.description();
            manufacturer = serialPortInfo.manufacturer();
@@ -783,23 +816,23 @@ void Dialog::on_checkBoxWdEnable_clicked(bool checked)
 
 }
 
-void Dialog::on_lineEditLogPath_editingFinished()
-{
-    QString pathStr = ui->lineEditLogPath->text();
-    ui->lineEditLogPath->setToolTip(pathStr);
-    settings.setValue("log/logPath", pathStr);
-}
+//void Dialog::on_lineEditLogPath_editingFinished()
+//{
+//    QString pathStr = ui->lineEditLogPath->text();
+//    ui->lineEditLogPath->setToolTip(pathStr);
+//    settings.setValue("log/logPath", pathStr);
+//}
 
-void Dialog::on_pushButtonLogSelectPath_clicked()
-{
-    QString str = QFileDialog::getExistingDirectory(this, tr("Select dir for logs"));
-    if(str.isEmpty() == false){
-        //settings.setValue("watchdog/unityBuildExePath", str);
-        ui->lineEditLogPath->setText(str);
-        //ui->lineEditLogPath->setToolTip(str);
-        on_lineEditLogPath_editingFinished();
-    }
-}
+//void Dialog::on_pushButtonLogSelectPath_clicked()
+//{
+//    QString str = QFileDialog::getExistingDirectory(this, tr("Select dir for logs"));
+//    if(str.isEmpty() == false){
+//        //settings.setValue("watchdog/unityBuildExePath", str);
+//        ui->lineEditLogPath->setText(str);
+//        //ui->lineEditLogPath->setToolTip(str);
+//        on_lineEditLogPath_editingFinished();
+//    }
+//}
 
 void Dialog::appendLogString(QString str)
 {
@@ -824,7 +857,7 @@ QString Dialog::todayLogPath()
 
 void Dialog::appendLogFileString(QString logString)
 {
-    QString pathStr = ui->lineEditLogPath->text();
+    QString pathStr = dirStruct.logsDir; //ui->lineEditLogPath->text();
     if(QDir().mkpath(pathStr) == true){
 
         QString logFileName = todayLogName();
@@ -955,7 +988,7 @@ void Dialog::handleLogUpdateTimeout()
 {
     QString curTime = QTime::currentTime().toString();
     QString logString = curTime + ">" + "still alive, threshExceedCount: " + QString::number(distanceOverThreshCnt) + " ";
-    logString += "comRecvd/err:" + QString::number(comPacketsRcvd) + "/" + QString::number(comErrorPacketsRcvd);
+    logString += "comRecvd/err:" + QString::number(com->comPacketsRcvd) + "/" + QString::number(com->comErrorPacketsRcvd);
 
     appendLogFileString(logString);
 }
@@ -1021,8 +1054,8 @@ void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
 
 void Dialog::handleUpdateUi()
 {
-    ui->lineEditComPacketsRcv->setText(QString::number(comPacketsRcvd));
-    ui->lineEditComPacketsRcvError->setText(QString::number(comErrorPacketsRcvd));
+    ui->lineEditComPacketsRcv->setText(QString::number(com->comPacketsRcvd));
+    ui->lineEditComPacketsRcvError->setText(QString::number(com->comErrorPacketsRcvd));
     QString enc1Str = com->enc1Val == -1 ? "n/a": QString::number(com->enc1Val);
     QString enc2Str = com->enc2Val == -1 ? "n/a": QString::number(com->enc2Val);
     QString distStr = com->distVal == -1? "n/a": QString::number(com->distVal);

@@ -4,7 +4,7 @@
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-
+#include "utils.h"
 
 class Web : public QObject
 {
@@ -13,8 +13,8 @@ public:
     explicit Web(QObject *parent = nullptr);
 
     QString wbUser, wbPass, wbPath;
-    QString todayLogPath;
-    QString rootPath;
+
+    TDirStruct *dirStruct;
 
     void start();
 
@@ -41,6 +41,8 @@ private:
     void processAliveReply(QNetworkReply*);
     void processTasksReply(QNetworkReply*);
     void processUploadLogsReply(QNetworkReply*);
+
+    void cleanZipTemporaryFiles();
 
 signals:
     void msg(QString);

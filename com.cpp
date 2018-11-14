@@ -2,7 +2,8 @@
 
 Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Val(-1), enc2Val(-1), distVal(-1),
-    enc1Offset(0), enc2Offset(0)
+    enc1Offset(0), enc2Offset(0),
+    comPacketsRcvd(0), comErrorPacketsRcvd(0)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),

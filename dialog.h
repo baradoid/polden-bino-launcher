@@ -13,6 +13,7 @@
 
 #include "web.h"
 #include "com.h"
+#include "utils.h"
 
 namespace Ui {
 class Dialog;
@@ -41,6 +42,7 @@ signals:
 
 //typedef enum { idle, connected } TWebState;
 
+
 class Dialog : public QDialog
 {
     Q_OBJECT
@@ -64,12 +66,9 @@ private:
     QTime startRecvTime;
 
     QString recvStr;
-
     QSettings settings;
 
-
-
-
+    TDirStruct dirStruct;
 
     int distanceOverThreshCnt;
 
@@ -81,6 +80,9 @@ private:
     void initEncTableWidget();
     void initAppAutoStartCheckBox();
     void initComPort();
+    void initRootPathControl();
+
+    void initPathStruct(QString rootDir);
 
     void processStr(QString str);
 
@@ -102,7 +104,6 @@ private:
 
     void sendPosData();
 
-    uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
     QTimer *writeCbParamsTimer;
     uint8_t cbWriteParamsCount;
@@ -130,8 +131,8 @@ private slots:
     void on_lineEditWdTimeOutSecs_editingFinished();
     void handleWdTimeout();
     void on_checkBoxWdEnable_clicked(bool checked);
-    void on_lineEditLogPath_editingFinished();
-    void on_pushButtonLogSelectPath_clicked();
+    //void on_lineEditLogPath_editingFinished();
+    //void on_pushButtonLogSelectPath_clicked();
     void on_checkBoxLogClearIfSizeExceed_clicked();
     void on_audioOn_clicked();
     void on_audioOff_clicked();

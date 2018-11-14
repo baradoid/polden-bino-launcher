@@ -16,13 +16,13 @@ public:
     uint16_t enc1Offset, enc2Offset;
     //int distVal;
     uint16_t rangeThresh;
-
+    uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
     void setZero();
 
-private:    
-    int recvdComPacks, bytesRecvd;
-    uint32_t comPacketsRcvd, comErrorPacketsRcvd;
+private:            
+    int recvdComPacks, bytesRecvd;    
+
     QString recvStr;
 
     void processStr(QString str);

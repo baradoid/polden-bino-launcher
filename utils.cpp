@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QDebug>
 #include <QObject>
+#include <QDir>
 
 QString todayLogName()
 {
@@ -25,8 +26,8 @@ bool zip(QString filename, QString zip_filename)
         qDebug("zip.exe not found");
         return false;
     }
-    qDebug() << "compress " << qPrintable(filename) << " to "
-             << qPrintable(zip_filename);
+//    qDebug() << "compress " << qPrintable(filename) << " to "
+//             << qPrintable(zip_filename);
     QProcess *zipProc = new QProcess();
     //zipProc->setWorkingDirectory(fileOutPath);
     QStringList pars;
@@ -36,7 +37,7 @@ bool zip(QString filename, QString zip_filename)
     pars.append(filename);
     zipProc->start("zip.exe", pars);
     zipProc->waitForStarted(-1);
-    //unZipProc->waitForFinished(-1);
+    zipProc->waitForFinished(-1);
 //    connect(zipProc,  QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
 //        [=](int exitCode, QProcess::ExitStatus exitStatus){
 //            qDebug("zipProc finished");

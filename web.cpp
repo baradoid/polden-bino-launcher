@@ -39,7 +39,7 @@ void Web::handleNamReplyFinished(QNetworkReply* repl)
 
         QString reqStr = repl->request().url().toString();
         //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-        qDebug() << "handleNamReplyFinished" << qPrintable(repl->url().toString());
+        //qDebug() << "handleNamReplyFinished" << qPrintable(repl->url().toString());
         QString reqUrl = repl->url().toString();
 
         if(reqUrl.endsWith("login.php")){
@@ -83,10 +83,10 @@ void Web::handleNamReplyFinished(QNetworkReply* repl)
                                url.toEncoded().constData(), qPrintable(filename));
 
                         //QString rootPath = ui->lineEditRootPath->text();
-                        QString filePath = rootPath + "/download/" + filename;
+                        QString filePath = dirStruct->downloadDir + filename;
 
                         QFileInfo  fi(filename);
-                        QString fileOutPath = rootPath + "/" + fi.baseName();
+                        QString fileOutPath = dirStruct->rootDir + "/" + fi.baseName();
                         QDir().mkdir(fileOutPath);
 
                         unZip(filePath, fileOutPath);
@@ -138,19 +138,20 @@ void Web::processLoginReply(QNetworkReply* repl)
 
             //upload today log
 
-            //QString tlPath = todayLogPath();
-            //QString pathStr = ui->lineEditLogPath->text();
-            QFileInfo fi(todayLogPath);
+            QFileInfo fi(dirStruct->logsDir + todayLogPath());
             QString todayLogZipPath = fi.absoluteDir().absolutePath() + "/" + fi.baseName() + ".zip";
-            if(zip(todayLogPath, todayLogZipPath) == false){
-                emit msg("zip file " + todayLogPath + " failed");
+            if(zip(fi.absoluteFilePath(), todayLogZipPath) == false){
+                emit msg("zip file " + fi.absoluteFilePath() + " failed");
             }
             else{
                 if(webUploadTodayLogAsMultiPart(todayLogZipPath) == true)
-                    emit msg("today log upload POST success:" + todayLogPath);
+                    emit msg("today log .zip upload POST success: \"" + todayLogZipPath + "\"");
                 else
-                    emit msg("today log upload POST failed:" + todayLogPath);
+                    emit msg("today log .zip upload POST failed: \"" + todayLogZipPath + "\"");
             }
+
+            //cleanZipTemporaryFiles();
+
             //webUploadTodayLogAsRequest(todayLogZipPath);
         }
         else{
@@ -165,6 +166,21 @@ void Web::processLoginReply(QNetworkReply* repl)
         emit connError(repl->errorString());
         QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
     }
+}
+
+void Web::cleanZipTemporaryFiles()
+{
+    QDir dir(dirStruct->logsDir);
+    QStringList filters;
+    filters << "zia*";
+    QStringList strList = dir.entryList(filters);
+
+    foreach (QString ss, strList) {
+        qDebug() << qPrintable(dir.absolutePath() + "/" + ss);
+        QFile::remove(dir.absolutePath() + "/" + ss);
+    }
+
+
 }
 
 void Web::handlePostAliveTimeout()
@@ -284,7 +300,7 @@ bool Web::webUploadTodayLogAsMultiPart(QString todayLogPath)
 
     QFile *file = new QFile(todayLogPath);
     if(file->open(QIODevice::ReadOnly) == false){
-        emit msg("error today log file open");
+        emit msg("error today log file open: \"" + todayLogPath + "\"");
         return false;
     }
     //QByteArray ba = file->readAll();
@@ -304,16 +320,16 @@ void Web::processUploadLogsReply(QNetworkReply* repl)
     if(repl->error() == QNetworkReply::NoError){
         QString ret = repl->readAll();
         if(ret.contains("ok")){
-            emit msg("WEB: today log upload success");
+            emit msg("today log upload success");
         }
         else{
-            emit msg("WEB: today log upload fail");
+            emit msg("today log upload fail");
         }
-        qDebug() << "upload_logs finished success:" << repl->readAll();
+        //qDebug() << "upload_logs finished success:" << repl->readAll();
     }
     else{
-        emit msg("WEB: today log upload failed:\"" + repl->errorString() + ("\""));
-        qDebug() << "upload_logs finished " << repl->errorString();
+        emit msg("today log upload failed: \"" + repl->errorString() + ("\""));
+        //qDebug() << "upload_logs finished " << repl->errorString();
     }
 }
 
@@ -363,8 +379,8 @@ QString Web::saveFileName(const QUrl &url)
 bool Web::saveToDisk(const QString &filename, QIODevice *data)
 {
     //QString rootPath = ui->lineEditRootPath->text();
-    QDir().mkdir(rootPath + "/download/");
-    QString filePath = rootPath + "/download/" + filename;
+    QDir().mkdir(dirStruct->downloadDir);
+    QString filePath = dirStruct->downloadDir + filename;
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
