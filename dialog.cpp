@@ -117,31 +117,8 @@ Dialog::Dialog(QWidget *parent) :
     appendLogString(QString("restore audio enable on startUp: ")+(bAudioEnableOnStartup? "true":"false"));
     ui->checkBoxAudioEnableOnStartup->setChecked(bAudioEnableOnStartup);
 
-    on_pushButton_refreshCom_clicked();
+    initComPort();
 
-    QString mainCom = settings.value("usbMain", "").toString();
-
-    appendLogString(QString("COM: restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
-
-    if(ui->comComboBox->count() == 0){
-        appendLogString(QString("COM: no com ports in system"));
-    }
-    else{
-        for(int i=0; i<ui->comComboBox->count(); i++){
-           // ui->comComboBoxUsbMain->itemData()
-            if(ui->comComboBox->itemData(i).toString() == mainCom){
-                appendLogString(QString("COM: port %1 present. Try open.").arg(mainCom));
-                ui->comComboBox->setCurrentIndex(i);
-                on_pushButtonComOpen_clicked();
-                if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
-                    com->setAudioEnable(true);
-                //if(ui->checkBoxInitOnStart->isChecked()){
-                //    on_pushButtonInitiate_clicked();
-                //}
-                break;
-            }
-        }
-    }
 
     rangeThresh = settings.value("rangeThresh", 20).toInt();
 
@@ -301,11 +278,6 @@ Dialog::Dialog(QWidget *parent) :
 
     web->start();
 
-    com = new Com(this);
-    connect(com, SIGNAL(newPosData()), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
-    connect(com, &Com::msg, [=](QString msg){
-        appendLogString("COM:"+msg);
-    });
 
 }
 
@@ -328,6 +300,43 @@ typedef struct{
     QTime lastHbaRecvd;
     bool bHbaRecvd;
 } TSenderInfo;
+
+void Dialog::initComPort()
+{
+    com = new Com(this);
+    connect(com, SIGNAL(newPosData()), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(com, &Com::msg, [=](QString msg){
+        appendLogString("COM:"+msg);
+    });
+
+    on_pushButton_refreshCom_clicked();
+
+
+    QString mainCom = settings.value("usbMain", "").toString();
+
+    appendLogString(QString("COM: restore com port num:\"")+(mainCom.isEmpty()? "n/a":mainCom)+ "\"");
+
+    if(ui->comComboBox->count() == 0){
+        appendLogString(QString("COM: no com ports in system"));
+    }
+    else{
+        for(int i=0; i<ui->comComboBox->count(); i++){
+           // ui->comComboBoxUsbMain->itemData()
+            if(ui->comComboBox->itemData(i).toString() == mainCom){
+                appendLogString(QString("COM: port %1 present. Try open.").arg(mainCom));
+                ui->comComboBox->setCurrentIndex(i);
+                on_pushButtonComOpen_clicked();
+                if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
+                    com->setAudioEnable(true);
+                //if(ui->checkBoxInitOnStart->isChecked()){
+                //    on_pushButtonInitiate_clicked();
+                //}
+                break;
+            }
+        }
+    }
+}
+
 
 void Dialog::initEncTableWidget()
 {

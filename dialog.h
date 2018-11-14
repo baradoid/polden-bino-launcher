@@ -83,6 +83,7 @@ private:
 
     void initEncTableWidget();
     void initAppAutoStartCheckBox();
+    void initComPort();
 
     void processStr(QString str);
 

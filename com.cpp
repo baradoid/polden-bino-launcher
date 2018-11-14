@@ -1,7 +1,7 @@
 #include "com.h"
 
 Com::Com(QObject *parent) : QObject(parent)
-{    
+{
     serial.setBaudRate(115200);
     connect(&serial, SIGNAL(readyRead()),
             this, SLOT(handleSerialReadyRead()));
