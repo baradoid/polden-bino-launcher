@@ -22,12 +22,10 @@
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog),
-    enc1(0),enc2(0),r(0),
+    //enc1(0),enc2(0),r(0),
     settings("Polden Ltd.", "bino-launcher"),
     wdNoClientsTimeSecs(0),
     bUnityStarted(false),
-    enc1Val(0), enc2Val(0),
-    enc1Offset(0), enc2Offset(0),
     distanceOverThreshCnt(0),
     lastDistTreshState(false),
     comPacketsRcvd(0), comErrorPacketsRcvd(0)
@@ -109,8 +107,8 @@ Dialog::Dialog(QWidget *parent) :
     QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(hbTimerOut()));
     hbTimer.start();    
 
-    debugPosTimer.setInterval(20);
-    QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
+    //debugPosTimer.setInterval(20);
+    //QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
     //debugPosTimer.start();       
 
     bool bAudioEnableOnStartup = settings.value("auidoEnableOnStartup", true).toBool();
@@ -120,10 +118,10 @@ Dialog::Dialog(QWidget *parent) :
     initComPort();
 
 
-    rangeThresh = settings.value("rangeThresh", 20).toInt();
+    com->rangeThresh = settings.value("rangeThresh", 20).toInt();
 
     ui->lineEditRangeThresh->setValidator( new QIntValidator(0, 100, this) );
-    ui->lineEditRangeThresh->setText(QString::number(rangeThresh));
+    ui->lineEditRangeThresh->setText(QString::number(com->rangeThresh));
 
     ui->lineEditRange->setText("n/a");
     ui->lineEditRange_2->setText("n/a");
@@ -184,7 +182,7 @@ Dialog::Dialog(QWidget *parent) :
     initEncTableWidget();
 
     QTimer *uiUpdateTimer = new QTimer(this);
-    connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUiUpdate()));
+    connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUpdateUi()));
     uiUpdateTimer->setInterval(50);
     uiUpdateTimer->start();
 
@@ -206,22 +204,31 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEdit_wbPass->setText(wbPass);
 
     connect(ui->lineEdit_wbPath, &QLineEdit::editingFinished, [=](){
-        qDebug() << "on_lineEdit_wbPath_editingFinished";
+        //qDebug() << "on_lineEdit_wbPath_editingFinished";
         QString wbPath = ui->lineEdit_wbPath->text();
-        settings.setValue("webManger/path", wbPath);
-        web->wbPath = wbPath;
+        if(web->wbPath != wbPath){
+            web->wbPath = wbPath;
+            settings.setValue("webManger/path", wbPath);
+            appendLogString("WEB: url set \"" + wbPath + "\"");
+        }
     });
     connect(ui->lineEdit_wbUser, &QLineEdit::editingFinished, [=](){
-        qDebug() << "on_lineEdit_wbUser_editingFinished";
+        //qDebug() << "on_lineEdit_wbUser_editingFinished";
         QString wbUser = ui->lineEdit_wbUser->text();
-        settings.setValue("webManger/user", wbUser);
-        web->wbUser = wbUser;
+        if(web->wbUser != wbUser){
+            web->wbUser = wbUser;
+            settings.setValue("webManger/user", wbUser);
+            appendLogString("WEB: user set \"" + wbUser + "\"");
+        }
     });
     connect(ui->lineEdit_wbPass, &QLineEdit::editingFinished, [=](){
-        qDebug() << "on_lineEdit_wbPass_editingFinished";
+        //qDebug() << "on_lineEdit_wbPass_editingFinished";
         QString wbPass = ui->lineEdit_wbPass->text();
-        settings.setValue("webManger/pass", wbPass);
-        web->wbPass = wbPass;
+        if(web->wbPass != wbPass){
+            web->wbPass = wbPass;
+            settings.setValue("webManger/pass", wbPass);
+            appendLogString("WEB: pass set \"" + wbPass + "\"");
+        }
     });
 
     QPalette palette;
@@ -287,7 +294,7 @@ Dialog::~Dialog()
 {
     QString comName = (ui->comComboBox->currentData().toString());
     settings.setValue("usbMain", comName);
-    settings.setValue("rangeThresh", rangeThresh);
+    settings.setValue("rangeThresh", com->rangeThresh);
 
     appendLogString("--- quit");
     delete ui;
@@ -304,7 +311,7 @@ typedef struct{
 void Dialog::initComPort()
 {
     com = new Com(this);
-    connect(com, SIGNAL(newPosData()), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(com, SIGNAL(newPosData(uint16_t,uint16_t,int)), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
     connect(com, &Com::msg, [=](QString msg){
         appendLogString("COM:"+msg);
     });
@@ -410,13 +417,13 @@ void Dialog::initEncTableWidget()
     //ui->lineEditEnc1->setText("n/a");
     //ui->lineEditEnc2->setText("n/a");
 
-    enc1Offset = settings.value("encoders/enc1Offset", 0).toInt();
+    com->enc1Offset = settings.value("encoders/enc1Offset", 0).toInt();
     //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
-    leEnc1Off->setText(QString::number(enc1Offset));
+    leEnc1Off->setText(QString::number(com->enc1Offset));
 
-    enc2Offset = settings.value("encoders/enc2Offset", 0).toInt();
+    com->enc2Offset = settings.value("encoders/enc2Offset", 0).toInt();
     //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
-    leEnc2Off->setText(QString::number(enc2Offset));
+    leEnc2Off->setText(QString::number(com->enc2Offset));
 
     ui->tableWidgetEncoders->setItem(0, 0, leEnc1);
     ui->tableWidgetEncoders->setItem(1, 0, leEnc2);
@@ -596,53 +603,44 @@ typedef struct{
 } CbDataUdp;
 #pragma pack(pop)
 
-void Dialog::debugTimerOut()
-{
-    enc1++;
-    enc2 = 1278;
-    if(enc1 >=8192)
-        enc1 = 0;
-    CbDataUdp cbdata;
-    cbdata.pos1 = enc1;
-    cbdata.pos2 = enc2;
-    //cbdata.distance = 12;
+//void Dialog::debugTimerOut()
+//{
+//    enc1++;
+//    enc2 = 1278;
+//    if(enc1 >=8192)
+//        enc1 = 0;
+//    CbDataUdp cbdata;
+//    cbdata.pos1 = enc1;
+//    cbdata.pos2 = enc2;
+//    //cbdata.distance = 12;
 
-    //ui->lineEditEnc1->setText(QString::number(enc1));
-    //ui->lineEditEnc2->setText(QString::number(enc2));
-    //ui->lineEditRange->setText(QString::number(cbdata.distance));
+//    //ui->lineEditEnc1->setText(QString::number(enc1));
+//    //ui->lineEditEnc2->setText(QString::number(enc2));
+//    //ui->lineEditRange->setText(QString::number(cbdata.distance));
 
-    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r,0)->data(Qt::UserRole).toInt();
-        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
-    }
+//    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+//        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r,0)->data(Qt::UserRole).toInt();
+//        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
+//    }
 
 
-}
+//}
 
 void Dialog::on_pushButtonComOpen_clicked()
-{    
-    serial.setBaudRate(115200);
-     if(ui->pushButtonComOpen->text() == "open"){
-         if(serial.isOpen() == false){
+{        
+     if(ui->pushButtonComOpen->text() == "open"){         
+         if(com->isOpen() == false){
              QString comName = ui->comComboBox->currentText();
              if(comName.length() > 0){
                  //UartThread.requestToStart(comName);
-                 serial.setPortName(comName);
-                 com->setPort(comName);
-                 if (!serial.open(QIODevice::ReadWrite)) {
-                     qDebug("%s port open FAIL", qUtf8Printable(comName));
-                     appendLogString(QString("COM: %1 port open FAIL").arg(comName));
-                     return;
-                 }                 
+                 com->setPortName(comName);
                  if (com->open() == false) {
                      qDebug("%s port open FAIL", qUtf8Printable(comName));
                      appendLogString(QString("COM: %1 port open FAIL").arg(comName));
                      return;
                  }
 //                 qDebug("%s port opened", qUtf8Printable(comName));
-                 appendLogString(QString("COM: port %1 opened").arg(serial.portName()));
-                 connect(&serial, SIGNAL(readyRead()),
-                         this, SLOT(handleSerialReadyRead()));
+                 appendLogString(QString("COM: port %1 opened").arg(com->portName()));
 //                 connect(&serial, SIGNAL(bytesWritten(qint64)),
 //                         this, SLOT(handleSerialDataWritten(qint64)));
                  ui->pushButtonComOpen->setText("close");
@@ -655,13 +653,13 @@ void Dialog::on_pushButtonComOpen_clicked()
          }
      }
      else{
-         serial.close();
+         com->close();
          //udpSocket->close();
 //         qDebug("port closed");
          ui->pushButtonComOpen->setText("open");
          //contrStringQueue.clear();
          //ui->statusBar->showMessage("disconnected", 2000);
-         appendLogString(QString("COM: port %1 closed").arg(serial.portName()));
+         appendLogString(QString("COM: port %1 closed").arg(com->portName()));
      }
 }
 
@@ -704,8 +702,8 @@ void Dialog::on_pushButton_refreshCom_clicked()
 
 void Dialog::on_pushButtonSet_clicked()
 {
-    rangeThresh = ui->lineEditRangeThresh->text().toInt();
-    qDebug("thresh: %d", rangeThresh);
+    com->rangeThresh = ui->lineEditRangeThresh->text().toInt();
+    qDebug("thresh: %d", com->rangeThresh);
 }
 
 void Dialog::on_pushButtonDebugSend_clicked()
@@ -964,38 +962,38 @@ void Dialog::handleLogUpdateTimeout()
 
 void Dialog::on_pushButtonEncSetZero_clicked()
 {
-    enc1Offset = enc1Val;
-    settings.setValue("encoders/enc1Offset", enc1Offset);
-    //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
-    leEnc1Off->setText(QString::number(enc1Offset));
+    com->setZero();
 
-    enc2Offset = enc2Val;
-    settings.setValue("encoders/enc2Offset", enc2Offset);
+    settings.setValue("encoders/enc1Offset", com->enc1Offset);
+    //ui->lineEditEnc1Offset->setText(QString::number(enc1Offset));
+    leEnc1Off->setText(QString::number(com->enc1Offset));
+
+    settings.setValue("encoders/enc2Offset", com->enc2Offset);
     //ui->lineEditEnc2Offset->setText(QString::number(enc2Offset));
-    leEnc2Off->setText(QString::number(enc2Offset));
+    leEnc2Off->setText(QString::number(com->enc2Offset));
 
     sendPosData();
 
-    appendLogString(QString("set new zero point: %1 %2 ").arg(enc1Offset).arg(enc2Offset));
+    appendLogString(QString("set new zero point: %1 %2 ").arg(com->enc1Offset).arg(com->enc2Offset));
 }
 
 void Dialog::sendPosData()
 {
     CbDataUdp cbdata;
     if(horEncSelectBG->checkedId() == 0){
-        cbdata.pos1 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
-        cbdata.pos2 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
+        cbdata.pos1 = (int16_t)((com->enc1Val-com->enc1Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((com->enc2Val-com->enc2Offset)&0x1fff);
     }
     else if(horEncSelectBG->checkedId() == 1){
-        cbdata.pos1 = (int16_t)((enc2Val-enc2Offset)&0x1fff);
-        cbdata.pos2 = (int16_t)((enc1Val-enc1Offset)&0x1fff);
+        cbdata.pos1 = (int16_t)((com->enc2Val-com->enc2Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((com->enc1Val-com->enc1Offset)&0x1fff);
     }
     if(checkEnc1Inv->isChecked())
         cbdata.pos1 = 0x1fff - cbdata.pos1;
     if(checkEnc2Inv->isChecked())
         cbdata.pos2 = 0x1fff - cbdata.pos2;
     //cbdata.distance = (int16_t)dist;
-    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(distVal<rangeThresh);
+    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(com->distVal<com->rangeThresh);
     cbdata.rangeThresh = distThreshExceed? 1:0;
 
     ui->checkBoxThreshExcess->setChecked(distThreshExceed);
@@ -1021,13 +1019,16 @@ void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
 }
 
 
-void Dialog::handleUiUpdate()
+void Dialog::handleUpdateUi()
 {
     ui->lineEditComPacketsRcv->setText(QString::number(comPacketsRcvd));
     ui->lineEditComPacketsRcvError->setText(QString::number(comErrorPacketsRcvd));
-    leEnc1->setText(QString::number(enc1Val));
-    leEnc2->setText(QString::number(enc2Val));
-    ui->lineEditRange->setText(QString::number(distVal));
+    QString enc1Str = com->enc1Val == -1 ? "n/a": QString::number(com->enc1Val);
+    QString enc2Str = com->enc2Val == -1 ? "n/a": QString::number(com->enc2Val);
+    QString distStr = com->distVal == -1? "n/a": QString::number(com->distVal);
+    leEnc1->setText(enc1Str);
+    leEnc2->setText(enc2Str);
+    ui->lineEditRange->setText(distStr);
 
     on_pushButtonFindWnd_clicked();
 }
@@ -1074,7 +1075,7 @@ void Dialog::initAppAutoStartCheckBox()
 
 void Dialog::handleWriteCBParamsTimeout()
 {
-    if(serial.isWritable() == true){
+    if(com->isWritable() == true){
         if(cbWriteParamsCount > 0){
             cbWriteParamsCount--;
 
@@ -1271,7 +1272,14 @@ void Dialog::setConnectionSuccess()
 //}
 
 
-void Dialog::handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist)
-{
+void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
+{    
+    //ui->lineEditEnc1->setText(QString::number(enc1Val));
+    //ui->lineEditEnc2->setText(QString::number(enc2Val));
+    //ui->lineEditTerm1->setText(QString::number(dist));
 
+    /*enc1Val = xPos1;
+    enc2Val = xPos2;
+    distVal = dist;*/
+    sendPosData();
 }

@@ -5,7 +5,6 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QtCore/QTimer>
-#include <QSerialPort>
 #include <QTime>
 #include <QSettings>
 #include <QButtonGroup>
@@ -54,11 +53,12 @@ private:
     Ui::Dialog *ui;
     QUdpSocket *udpSocket;
     QTimer hbTimer;
-    uint16_t enc1,enc2,r;
+    //uint16_t enc1,enc2,r;
+
+    bool lastDistTreshState;
 
     QTimer debugPosTimer;
 
-    QSerialPort serial;
     int recvdComPacks;
     int bytesRecvd;
     QTime startRecvTime;
@@ -67,12 +67,9 @@ private:
 
     QSettings settings;
 
-    uint16_t rangeThresh;
 
-    uint16_t enc1Val, enc2Val;
-    uint16_t enc1Offset, enc2Offset;
-    int distVal;
-    bool lastDistTreshState;
+
+
 
     int distanceOverThreshCnt;
 
@@ -121,7 +118,7 @@ private slots:
     void handleReadPendingDatagrams();
     void hbTimerOut();
 
-    void debugTimerOut();
+    //void debugTimerOut();
 
     void on_pushButtonComOpen_clicked();
     void on_pushButton_refreshCom_clicked();
@@ -144,7 +141,7 @@ private slots:
     void handleLogUpdateTimeout();
     void on_pushButtonEncSetZero_clicked();
     void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
-    void handleUiUpdate();
+    void handleUpdateUi();
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
 

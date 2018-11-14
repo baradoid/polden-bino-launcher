@@ -1,24 +1,17 @@
 #include "com.h"
 
-Com::Com(QObject *parent) : QObject(parent)
+Com::Com(QObject *parent) : QSerialPort(parent),
+    enc1Val(-1), enc2Val(-1), distVal(-1),
+    enc1Offset(0), enc2Offset(0)
 {
-    serial.setBaudRate(115200);
-    connect(&serial, SIGNAL(readyRead()),
+    setBaudRate(115200);
+    connect(this, SIGNAL(readyRead()),
             this, SLOT(handleSerialReadyRead()));
-}
-void Com::setPort(QString name)
-{
-    serial.setPortName(name);
 }
 
 bool Com::open()
 {
-    return serial.open(QIODevice::ReadWrite);
-}
-
-void Com::close()
-{
-    serial.close();
+    return QSerialPort::open(QIODevice::ReadWrite);
 }
 
 void Com::processStr(QString str)
@@ -44,6 +37,10 @@ void Com::processStr(QString str)
 
         //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
 
+        enc1Val = xPos1;
+        enc2Val = xPos2;
+        distVal = dist;
+
         //enc1Val = xPos1;
         //enc2Val = xPos2;
         //distVal = dist;
@@ -60,7 +57,7 @@ void Com::processStr(QString str)
 
 void Com::handleSerialReadyRead()
 {
-    QByteArray ba = serial.readAll();
+    QByteArray ba = readAll();
 
     bytesRecvd += ba.length();
 
@@ -81,7 +78,7 @@ void Com::handleSerialReadyRead()
 
 void Com::setAudioEnable(bool bEna)
 {
-    emit msg(QString("COM: set ") + QString(bEna?"audioOn":"audioOff"));
+    emit msg(QString("set ") + QString(bEna?"audioOn":"audioOff"));
     if(bEna){
         sendCmd("audioOn\n");
     }
@@ -92,9 +89,16 @@ void Com::setAudioEnable(bool bEna)
 
 void Com::sendCmd(const char* s)
 {
-    if(serial.isOpen()){
+    if(isOpen()){
         QString debStr(s);
         debStr.remove('\n');
-        qInfo("send: %s, sended %d", qPrintable(debStr), serial.write(s));
+        qInfo("send: %s, sended %d", qPrintable(debStr), write(s));
     }
+}
+
+void Com::setZero()
+{
+    enc1Offset = enc1Val;
+    enc2Offset = enc2Val;
+
 }

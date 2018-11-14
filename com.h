@@ -3,19 +3,24 @@
 #include <QObject>
 #include <QSerialPort>
 
-class Com : public QObject
+class Com : public QSerialPort
 {
     Q_OBJECT
 public:
-    explicit Com(QObject *parent = nullptr);
-    void setPort(QString);
-    bool open();
-    void close();
+    explicit Com(QObject *parent = nullptr);    
+    bool open();        
 
     void setAudioEnable(bool);
 
-private:
-    QSerialPort serial;
+    int16_t enc1Val, enc2Val, distVal;
+    uint16_t enc1Offset, enc2Offset;
+    //int distVal;
+    uint16_t rangeThresh;
+
+
+    void setZero();
+
+private:    
     int recvdComPacks, bytesRecvd;
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
     QString recvStr;
