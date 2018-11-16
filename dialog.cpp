@@ -266,6 +266,7 @@ Dialog::Dialog(QWidget *parent) :
     });
 
     web->start();
+
 }
 
 
@@ -1048,8 +1049,9 @@ void Dialog::sendPosData()
 void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
 {
     //settings.setValue("rangeAlwaysOn", checked);
-    sendPosData();
+    sendPosData();    
 }
+
 
 
 void Dialog::handleUpdateUi()
@@ -1064,6 +1066,22 @@ void Dialog::handleUpdateUi()
     ui->lineEditRange->setText(distStr);
 
     on_pushButtonFindWnd_clicked();
+
+    QString state = QVariant::fromValue(com->demoModeState).value<QString>();
+    ui->lineEdit_ComDemoState->setText(state);
+    float demoRemTime = 0;
+    switch(com->demoModeState){
+    case Com::idle:
+        demoRemTime = com->demoModePeriod.remainingTime()/1000.;
+        break;
+    default:
+        demoRemTime = com->demoModeSteps/50.;
+        break;
+    }
+
+    ui->lineEdit_ComDemoTime->setText(QString::number(demoRemTime, 'f', 1));
+
+    //
 }
 
 void Dialog::initAppAutoStartCheckBox()
@@ -1315,4 +1333,9 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
     enc2Val = xPos2;
     distVal = dist;*/
     sendPosData();
+}
+
+void Dialog::on_pushButton_ComDemoStart_clicked()
+{
+    com->startDemo();
 }

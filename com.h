@@ -4,9 +4,6 @@
 #include <QSerialPort>
 #include <QTimer>
 
-typedef enum {
-    idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
-} TDemoModeState;
 
 class Com : public QSerialPort
 {
@@ -23,15 +20,23 @@ public:
     uint16_t rangeThresh;
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
+
+    enum TDemoModeState {
+        idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
+    };
+
+    Q_ENUM(TDemoModeState)
+
+    int demoModeSteps;
+    QTimer demoModePeriod;
+    TDemoModeState demoModeState;
+
     void setZero();
+    void startDemo();
 
 private:            
     int recvdComPacks, bytesRecvd;    
-    QString recvStr;
-    QTimer demoModePeriod;
-
-    TDemoModeState demoModeState;
-    int demoModeSteps;
+    QString recvStr;    
 
     void processStr(QString str);
     void sendCmd(const char* s);

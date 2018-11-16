@@ -130,6 +130,13 @@ void Com::resetDemoModeTimer()
     demoModePeriod.start();
 }
 
+void Com::startDemo()
+{
+    demoModePeriod.setInterval(50);
+    demoModeSteps = 1;
+    demoModeState = idle;
+}
+
 void Com::handleDemoModePeriod()
 {
     switch(demoModeState){
@@ -140,14 +147,14 @@ void Com::handleDemoModePeriod()
             enc1Val = 0;
         if(enc2Val == -1)
             enc2Val = 0;
-        emit msg("human interface timeout. Start demo mode. idle");
+        emit msg("human interface timeout. Start demo mode");
         demoModePeriod.setInterval(50);
         demoModeState = idleTimeout;
         break;
     case idleTimeout:
         demoModeSteps--;
         if(demoModeSteps <= 0){
-            demoModeSteps = 500;
+            demoModeSteps = 125;
             demoModeState = walkIn;
         }
         break;
@@ -160,24 +167,24 @@ void Com::handleDemoModePeriod()
         break;
     case movingLeft:
         //emit msg("human interface timeout. Start demo mode. moveLeft");
-        enc1Val = (enc1Val+enc1Offset-5)&0x1fff;
+        enc1Val = (enc1Val+enc1Offset-25)&0x1fff;
         enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
 
         demoModeSteps--;
         if(demoModeSteps <= 0){
-            demoModeSteps = 500;
+            demoModeSteps = 125;
             demoModeState = movingRight;
         }
         break;
     case movingRight:
         //emit msg("human interface timeout. Start demo mode. moveRight");
 
-        enc1Val = (enc1Val+enc1Offset+5)&0x1fff;
+        enc1Val = (enc1Val+enc1Offset+25)&0x1fff;
         enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
 
         demoModeSteps--;
         if(demoModeSteps <= 0){
-            demoModeSteps = 500;
+            demoModeSteps = 125;
             demoModeState = walkOut;
         }
         break;
@@ -193,3 +200,4 @@ void Com::handleDemoModePeriod()
     }
     emit newPosData(0, 0, 0);
 }
+
