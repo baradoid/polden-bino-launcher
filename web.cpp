@@ -6,7 +6,7 @@
 #include <QDir>
 #include <QHttpMultiPart>
 #include <QProcess>
-
+#include <QDebug>
 #include "utils.h"
 
 Web::Web(QObject *parent) : QObject(parent),

@@ -2,6 +2,11 @@
 
 #include <QObject>
 #include <QSerialPort>
+#include <QTimer>
+
+typedef enum {
+    idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
+} TDemoModeState;
 
 class Com : public QSerialPort
 {
@@ -22,13 +27,16 @@ public:
 
 private:            
     int recvdComPacks, bytesRecvd;    
-
     QString recvStr;
+    QTimer demoModePeriod;
+
+    TDemoModeState demoModeState;
+    int demoModeSteps;
 
     void processStr(QString str);
-
     void sendCmd(const char* s);
 
+    void resetDemoModeTimer();
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
@@ -36,5 +44,6 @@ signals:
 
 public slots:
 private slots:
-    void handleSerialReadyRead();
+    void handleSerialReadyRead();    
+    void handleDemoModePeriod();
 };

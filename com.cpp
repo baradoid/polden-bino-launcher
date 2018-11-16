@@ -3,11 +3,28 @@
 Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Val(-1), enc2Val(-1), distVal(-1),
     enc1Offset(0), enc2Offset(0),
-    comPacketsRcvd(0), comErrorPacketsRcvd(0)
+    comPacketsRcvd(0), comErrorPacketsRcvd(0),
+    demoModePeriod(this), demoModeState(idle)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),
             this, SLOT(handleSerialReadyRead()));
+
+
+//    connect(&demoModeTimeOut, &QTimer::timeout, [=](){
+//        emit msg("human interface timeout. Start demo mode.");
+//        demoModeState = idle;
+//        demoModePeriod.start();
+
+//    });
+//    demoModeTimeOut.setSingleShot(true);
+//    demoModeTimeOut.setInterval(/*120*/ 15*1000);
+//    demoModeTimeOut.start();
+
+    connect(&demoModePeriod, SIGNAL(timeout()),
+            this, SLOT(handleDemoModePeriod()));
+
+    resetDemoModeTimer();
 }
 
 bool Com::open()
@@ -71,6 +88,7 @@ void Com::handleSerialReadyRead()
             if(recvStr.length() != 17){
                 comErrorPacketsRcvd++;
             }
+            resetDemoModeTimer();
             processStr(recvStr);
             recvStr.clear();
         }
@@ -101,5 +119,77 @@ void Com::setZero()
 {
     enc1Offset = enc1Val;
     enc2Offset = enc2Val;
+}
 
+void Com::resetDemoModeTimer()
+{
+    demoModeSteps = 1;
+    demoModeState = idle;
+    demoModePeriod.setSingleShot(false);
+    demoModePeriod.setInterval(60*1000);
+    demoModePeriod.start();
+}
+
+void Com::handleDemoModePeriod()
+{
+    switch(demoModeState){
+    case idle:
+        if(distVal == -1)
+            distVal = 50;
+        if(enc1Val == -1)
+            enc1Val = 0;
+        if(enc2Val == -1)
+            enc2Val = 0;
+        emit msg("human interface timeout. Start demo mode. idle");
+        demoModePeriod.setInterval(50);
+        demoModeState = idleTimeout;
+        break;
+    case idleTimeout:
+        demoModeSteps--;
+        if(demoModeSteps <= 0){
+            demoModeSteps = 500;
+            demoModeState = walkIn;
+        }
+        break;
+    case walkIn:
+        //emit msg("human interface timeout. Start demo mode. walkIn");
+        distVal --;
+        if(distVal <= 5){
+            demoModeState = movingLeft;
+        }
+        break;
+    case movingLeft:
+        //emit msg("human interface timeout. Start demo mode. moveLeft");
+        enc1Val = (enc1Val+enc1Offset-5)&0x1fff;
+        enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
+
+        demoModeSteps--;
+        if(demoModeSteps <= 0){
+            demoModeSteps = 500;
+            demoModeState = movingRight;
+        }
+        break;
+    case movingRight:
+        //emit msg("human interface timeout. Start demo mode. moveRight");
+
+        enc1Val = (enc1Val+enc1Offset+5)&0x1fff;
+        enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
+
+        demoModeSteps--;
+        if(demoModeSteps <= 0){
+            demoModeSteps = 500;
+            demoModeState = walkOut;
+        }
+        break;
+    case walkOut:
+        //emit msg("human interface timeout. Start demo mode. walkOut");
+        distVal ++;
+        if(distVal >= 50){
+            demoModeSteps = 250;
+            demoModeState = idle;
+        }
+        break;
+
+    }
+    emit newPosData(0, 0, 0);
 }
