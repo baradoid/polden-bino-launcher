@@ -33,6 +33,7 @@ public:
 
     void setZero();
     void startDemo();
+    void stopDemo();
 
 private:            
     int recvdComPacks, bytesRecvd;    

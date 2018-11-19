@@ -1337,5 +1337,13 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
 
 void Dialog::on_pushButton_ComDemoStart_clicked()
 {
-    com->startDemo();
+    if(ui->pushButton_ComDemoStart->text() == "start demo"){
+        ui->pushButton_ComDemoStart->setText("stop demo");
+        com->startDemo();
+    }
+    else if(ui->pushButton_ComDemoStart->text() == "stop demo"){
+        ui->pushButton_ComDemoStart->setText("start demo");
+        com->stopDemo();
+
+    }
 }

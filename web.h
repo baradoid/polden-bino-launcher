@@ -4,6 +4,7 @@
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QMap>
 #include "utils.h"
 
 class Web : public QObject
@@ -21,6 +22,8 @@ public:
 private:
     QNetworkAccessManager nam;
     QString guid;
+    QString dlProjTaskId, dlProgTaskId;
+    QMap<QNetworkReply*, QString> replyMap;
 
     bool webUploadTodayLogAsMultiPart(QString todayLogPath);
     void webUploadTodayLogAsRequest(QString todayLogPath);
@@ -29,7 +32,8 @@ private:
     void processTask(QString);
     void installProgram(QString);
     void uninstallProgram(QString);
-    void restart();
+    void restart(QString taskId);
+    void uploadPath();
 
 
     bool isHttpRedirect(QNetworkReply *reply);
@@ -41,7 +45,9 @@ private:
     void processAliveReply(QNetworkReply*);
     void processTasksReply(QNetworkReply*);
     void processUploadLogsReply(QNetworkReply*);
-    void processDownloaded(QNetworkReply*);
+    void processProgressReply(QNetworkReply*);
+    bool processDownloaded(QNetworkReply*);
+    void postProgress(QString taskId);
 
     void cleanZipTemporaryFiles();
 

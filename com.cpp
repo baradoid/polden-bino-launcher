@@ -137,6 +137,12 @@ void Com::startDemo()
     demoModeState = idle;
 }
 
+void Com::stopDemo()
+{
+    resetDemoModeTimer();
+
+}
+
 void Com::handleDemoModePeriod()
 {
     switch(demoModeState){

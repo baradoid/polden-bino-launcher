@@ -55,10 +55,22 @@ void Web::handleNamReplyFinished(QNetworkReply* repl)
             processUploadLogsReply(repl);
 
         }
-        else if((reqUrl.contains("/programs/") == true) ||
-                (reqUrl.contains("/projects/") == true)){
-            processDownloaded(repl);
+        else if(reqUrl.endsWith("progress.php")){
+            processProgressReply(repl);
         }
+        else if(reqUrl.contains("/programs/") == true){
+            if(processDownloaded(repl) == true){
+                emit msg(QString("post progress:\"taskId:%1 done\"").arg(dlProgTaskId));
+                postProgress(dlProgTaskId);
+            }
+        }
+        else if(reqUrl.contains("/projects/") == true){
+            if(processDownloaded(repl) == true){
+                emit msg(QString("post progress:\"taskId:%1 done\"").arg(dlProjTaskId));
+                postProgress(dlProjTaskId);
+            }
+        }
+
 
 //        if(webState == idle){
 
@@ -79,7 +91,7 @@ void Web::handleWbLoginTimeout()
     params.addQueryItem("psswd", wbPass);
 
     QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/login.php"));
+    request.setUrl(QUrl(wbPath+"/login.php"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
     nam.post(request, params.toString().toLatin1());
@@ -110,7 +122,7 @@ void Web::processLoginReply(QNetworkReply* repl)
             }
             else{
                 if(webUploadTodayLogAsMultiPart(todayLogZipPath) == true)
-                    emit msg("today log .zip upload POST success: \"" + todayLogZipPath + "\"");
+                    emit msg("today log zip upload POST success: \"" + todayLogZipPath + "\"");
                 else
                     emit msg("today log .zip upload POST failed: \"" + todayLogZipPath + "\"");
             }
@@ -155,10 +167,26 @@ void Web::handlePostAliveTimeout()
     params.addQueryItem("guid", guid.toLatin1());
 
     QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/alive.php"));
+    request.setUrl(QUrl(wbPath+"/alive.php"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
     nam.post(request, params.toString().toLatin1());
+}
+
+void Web::postProgress(QString taskId)
+{
+    QUrlQuery params;
+    params.addQueryItem("guid", guid.toLatin1());
+    params.addQueryItem("task_id", taskId.toLatin1());
+    params.addQueryItem("progress", "100");
+    params.addQueryItem("done", "1");
+
+    QNetworkRequest request;
+    request.setUrl(QUrl(wbPath+"/progress.php"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
+
+    QNetworkReply *nr = nam.post(request, params.toString().toLatin1());
+    replyMap[nr] = taskId;
 }
 
 void Web::processAliveReply(QNetworkReply* repl)
@@ -173,13 +201,39 @@ void Web::processAliveReply(QNetworkReply* repl)
         }
         else{
             //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
-            emit msg("WEB: unexpected repl on alive req: " + readed);
+            emit msg("unexpected repl on alive req: " + readed);
             emit connError("unexpected response");
         }
     }
     else{
-        emit msg("WEB: error repl on alive req: " + repl->errorString());
+        emit msg("error repl on alive req: " + repl->errorString());
         emit connError(repl->errorString());
+    }
+
+    QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
+}
+
+void Web::processProgressReply(QNetworkReply* repl)
+{
+    if(repl->error() == QNetworkReply::NoError){
+        //qDebug() << "processProgressReply " << replyMap[repl].toLatin1();
+        QString readed(repl->readAll());
+        readed.replace('|', '&');
+        //QUrlQuery uq(readed);
+
+        if(readed == "ok"){
+            emit msg(QString("post progress on taskId \"")+replyMap[repl]+ QString("\" success with:\"")+ readed +"\"");
+            //emit connSuccess();
+        }
+        else{
+            emit msg(QString("post progress on taskId \"")+replyMap[repl]+ QString("\" fail with:\"")+ readed +"\"");
+            //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
+            //emit msg("unexpected repl on progress req: " + readed);
+            //emit connError("unexpected response");
+        }
+    }
+    else{
+        emit msg(QString("post progress on taskId \"")+replyMap[repl]+ QString("\" fail with:\"")+ repl->errorString() +"\"");
     }
 
     QTimer::singleShot(60*1000, this, SLOT(handlePostAliveTimeout()));
@@ -194,17 +248,17 @@ void Web::processTasksReply(QNetworkReply* repl)
 
         //qDebug() << "req: " << qPrintable(reqStr) << " repl: " << readed;
         if(readed.contains("Error") == false){
-            QString tasks("WEB: incoming tasks: ");
+            QString tasks("incoming tasks: ");
             tasks += readed;
             emit msg(tasks);
             processTasks(readed);
         }
         else{
-            emit msg(QString("WEB: task request fail: \"")+readed+("\""));
+            emit msg(QString("task request fail: \"")+readed+("\""));
         }
     }
     else{
-        emit msg("WEB: error repl on tasks req: " + repl->errorString());
+        emit msg("error repl on tasks req: " + repl->errorString());
         emit connError(repl->errorString());
     }
     QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
@@ -216,7 +270,7 @@ void Web::webUploadTodayLogAsRequest(QString todayLogPath)
 {
     QFile file(todayLogPath);
     if(file.open(QIODevice::ReadOnly) == false){
-        emit msg("WEB: error today log file open");
+        emit msg("error today log file open");
         return;
     }
     QByteArray ba = file.readAll();
@@ -234,7 +288,7 @@ void Web::webUploadTodayLogAsRequest(QString todayLogPath)
     //params.addQueryItem();
 
     QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/upload_logs.php"));
+    request.setUrl(QUrl(wbPath+"/upload_logs.php"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
     nam.post(request, params.toString().toLatin1());
@@ -274,7 +328,7 @@ bool Web::webUploadTodayLogAsMultiPart(QString todayLogPath)
     data->append(filePart);
 
 //    QString wbPath = ui->lineEdit_wbPath->text();
-    nam.post(QNetworkRequest(QUrl(wbPath+"/bino/upload_logs.php")), data);
+    nam.post(QNetworkRequest(QUrl(wbPath+"/upload_logs.php")), data);
 
 //    file->close();
     return true;
@@ -305,7 +359,7 @@ void Web::handlePostTasksTimeout()
     params.addQueryItem("guid", guid.toLatin1());
 
     QNetworkRequest request;
-    request.setUrl(QUrl(wbPath+"/bino/tasks.php"));
+    request.setUrl(QUrl(wbPath+"/tasks.php"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
     nam.post(request, params.toString().toLatin1());
@@ -364,7 +418,7 @@ bool Web::saveToDisk(const QString &filename, QIODevice *data)
 
 void Web::processTasks(QString uq)
 {
-    qDebug() << qPrintable(uq);
+    //qDebug() << qPrintable(uq);
     QStringList strList = uq.split(";");
 
     foreach(QString part, strList) {
@@ -378,63 +432,66 @@ void Web::processTask(QString task)
 {
     QStringList taskParts = task.split("&");
     if(taskParts.count() != 3){
-        QString errStr = "WEB:Err task: " + task;
+        QString errStr = "Err task: " + task;
         emit msg(errStr);
         return;
     }
+    QString taskId = taskParts[0];
     QString taskType = taskParts[1];
     if(taskType == "install_program"){
-        emit msg("WEB:install program task");
+        emit msg("install program task");
         //qDebug() << "install program task " << taskParts;
         QStringList pathParts = taskParts[2].split("!");
         //qDebug() << "install program task path " << pathParts;
         if(pathParts.count() != 2){
-            QString errStr = "WEB:Err install task path: " + taskParts[2];
+            QString errStr = "Err install task path: " + taskParts[2];
             emit msg(errStr);
             return;
         }
+        dlProgTaskId = taskId;
         installProgram(pathParts[1]);
     }
     else if(taskType == "install_project"){
-        emit msg("WEB:install project task");
+        emit msg("install project task");
         QStringList pathParts = taskParts[2].split("!");
         //qDebug() << "install program task path " << pathParts;
         if(pathParts.count() != 2){
-            QString errStr = "WEB:Err install task path: " + taskParts[2];
+            QString errStr = "Err install task path: " + taskParts[2];
             emit msg(errStr);
             return;
         }
+        dlProjTaskId = taskId;
         installProgram(pathParts[1]);
     }
     else if(taskType == "uninstall_program"){
-        emit msg("WEB:uninstall program");
+        emit msg("uninstall program");
 //        appendLogString("uninstall program task");
 //        qDebug() << "uninstall program task";
 //        uninstallProgram("");
     }
     else if(taskType == "uninstall_project"){
-        emit msg("WEB:uninstall project");
+        emit msg("uninstall project");
 //        appendLogString("uninstall project task");
 //        qDebug() << "uninstall project task";
     }
     else if(taskType == "upload"){
-        emit msg("WEB:upload");
+        emit msg("upload");
+        uploadPath();
 //        appendLogString("upload task");
 //        qDebug() << "upload task";
     }
     else if(taskType == "delete"){
-        emit msg("WEB:delete");
+        emit msg("delete");
 //        appendLogString("delete task");
 //        qDebug() << "delete task";
     }
     else if(taskType == "restart"){
-        emit msg("WEB:restart task");
-//        qDebug() << "restart task";
-//        restart();
+        emit msg("restart task");
+        restart(taskId);
     }
 }
 
-void Web::processDownloaded(QNetworkReply* repl)
+bool Web::processDownloaded(QNetworkReply* repl)
 {
     //qDebug() << "unknown req: " << qPrintable(readed);
 //            QString filename = saveFileName(url);
@@ -453,26 +510,29 @@ void Web::processDownloaded(QNetworkReply* repl)
         dirSuffix = "projects";
     }
     QUrl url = repl->url();
+    bool ret = false;
     if(repl->error()){
 //                qDebug("Download of %s failed: %s\n",
 //                        url.toEncoded().constData(),
 //                        qPrintable(repl->errorString()));
-        emit msg(QString("WEB:Download of %1 failed: %2")
+        emit msg(QString("Download of %1 failed: %2")
                  .arg(url.toEncoded().constData())
                  .arg(qPrintable(repl->errorString())));
+        ret = false;
     }
     else{
         if (isHttpRedirect(repl)){
-            fputs("Request was redirected.\n", stderr);
+            emit msg("Request was redirected");
         }
         else{
             QString filename = saveFileName(url);
-            if (saveToDisk(dirSuffix +"_"+filename, repl)) {
-                qDebug("Download of %s succeeded (saved to %s)\n",
-                       url.toEncoded().constData(), qPrintable(filename));
+            QString filenameInDownloadDir = dirSuffix +"_"+filename;
+            if (saveToDisk(filenameInDownloadDir, repl)) {
+                emit msg(QString("Download of %1 succeeded (saved to %2)")
+                         .arg(url.toString()).arg(filenameInDownloadDir));
 
                 //QString rootPath = ui->lineEditRootPath->text();
-                QString filePath = dirStruct->downloadDir +"/"+ dirSuffix +"_"+filename;
+                QString filePath = dirStruct->downloadDir +"/"+ filenameInDownloadDir;
 
                 QFileInfo  fi(filename);
                 QString fileOutPath = dirStruct->rootDir + "/" + dirSuffix + "/" + fi.baseName();
@@ -481,7 +541,9 @@ void Web::processDownloaded(QNetworkReply* repl)
                 unZip(filePath, fileOutPath);
             }
         }
+        ret = true;
     }
+    return ret;
 }
 
 void Web::installProgram(QString path)
@@ -489,14 +551,15 @@ void Web::installProgram(QString path)
     //qDebug(qPrintable(QString("install task: ") + path));
     //QString wbPath = ui->lineEdit_wbPath->text();
     QUrl fileUrl(wbPath+path);
-    emit msg("WEB:download path: \"" + fileUrl.toString() + "\"");
-    qDebug() << fileUrl;
+    emit msg("download path: \"" + fileUrl.toString() + "\"");
+    //qDebug() << fileUrl;
     QNetworkRequest request(fileUrl);
 
     QNetworkReply *repl =  nam.get(request);
     connect(repl, &QNetworkReply::downloadProgress,
-            [](qint64 bytesReceived, qint64 bytesTotal){
-        qDebug("download process %d %d", bytesReceived, bytesTotal);
+            [=](qint64 bytesReceived, qint64 bytesTotal){
+        //qDebug("download process %d %d", bytesReceived, bytesTotal);
+        emit msg(QString("download process - recvd:%1, total:%2").arg(bytesReceived).arg(bytesTotal));
     });
 
 
@@ -507,7 +570,15 @@ void Web::uninstallProgram(QString path)
 
 }
 
-void Web::restart()
+void Web::restart(QString taskId)
+{
+    postProgress(taskId);
+    emit msg(QString("restarting"));
+    QProcess proc;
+    proc.startDetached("shutdown /r");
+}
+
+void Web::uploadPath()
 {
 
 }
