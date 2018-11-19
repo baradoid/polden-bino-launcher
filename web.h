@@ -41,6 +41,7 @@ private:
     void processAliveReply(QNetworkReply*);
     void processTasksReply(QNetworkReply*);
     void processUploadLogsReply(QNetworkReply*);
+    void processDownloaded(QNetworkReply*);
 
     void cleanZipTemporaryFiles();
 

@@ -55,44 +55,9 @@ void Web::handleNamReplyFinished(QNetworkReply* repl)
             processUploadLogsReply(repl);
 
         }
-        else{
-            //qDebug() << "unknown req: " << qPrintable(readed);
-//            QString filename = saveFileName(url);
-//            if (saveToDisk(filename, reply)) {
-//                printf("Download of %s succeeded (saved to %s)\n",
-//                       url.toEncoded().constData(), qPrintable(filename));
-//            }
-
-            QUrl url = repl->url();
-            if(repl->error()){
-//                qDebug("Download of %s failed: %s\n",
-//                        url.toEncoded().constData(),
-//                        qPrintable(repl->errorString()));
-                emit msg(QString("WEB:Download of %1 failed: %2")
-                         .arg(url.toEncoded().constData())
-                         .arg(qPrintable(repl->errorString())));
-            }
-            else{
-                if (isHttpRedirect(repl)){
-                    fputs("Request was redirected.\n", stderr);
-                }
-                else{
-                    QString filename = saveFileName(url);
-                    if (saveToDisk(filename, repl)) {
-                        qDebug("Download of %s succeeded (saved to %s)\n",
-                               url.toEncoded().constData(), qPrintable(filename));
-
-                        //QString rootPath = ui->lineEditRootPath->text();
-                        QString filePath = dirStruct->downloadDir + filename;
-
-                        QFileInfo  fi(filename);
-                        QString fileOutPath = dirStruct->rootDir + "/" + fi.baseName();
-                        QDir().mkdir(fileOutPath);
-
-                        unZip(filePath, fileOutPath);
-                    }
-                }
-            }
+        else if((reqUrl.contains("/programs/") == true) ||
+                (reqUrl.contains("/projects/") == true)){
+            processDownloaded(repl);
         }
 
 //        if(webState == idle){
@@ -134,7 +99,7 @@ void Web::processLoginReply(QNetworkReply* repl)
             emit msg("connection success"); //appendLogString("WEB: connection success");
             emit connSuccess();
             QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
-            //QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
+            QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
 
             //upload today log
 
@@ -380,7 +345,7 @@ bool Web::saveToDisk(const QString &filename, QIODevice *data)
 {
     //QString rootPath = ui->lineEditRootPath->text();
     QDir().mkdir(dirStruct->downloadDir);
-    QString filePath = dirStruct->downloadDir + filename;
+    QString filePath = dirStruct->downloadDir +"/"+ filename;
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -432,7 +397,14 @@ void Web::processTask(QString task)
     }
     else if(taskType == "install_project"){
         emit msg("WEB:install project task");
-        //qDebug() << "install project task";
+        QStringList pathParts = taskParts[2].split("!");
+        //qDebug() << "install program task path " << pathParts;
+        if(pathParts.count() != 2){
+            QString errStr = "WEB:Err install task path: " + taskParts[2];
+            emit msg(errStr);
+            return;
+        }
+        installProgram(pathParts[1]);
     }
     else if(taskType == "uninstall_program"){
         emit msg("WEB:uninstall program");
@@ -459,6 +431,56 @@ void Web::processTask(QString task)
         emit msg("WEB:restart task");
 //        qDebug() << "restart task";
 //        restart();
+    }
+}
+
+void Web::processDownloaded(QNetworkReply* repl)
+{
+    //qDebug() << "unknown req: " << qPrintable(readed);
+//            QString filename = saveFileName(url);
+//            if (saveToDisk(filename, reply)) {
+//                printf("Download of %s succeeded (saved to %s)\n",
+//                       url.toEncoded().constData(), qPrintable(filename));
+//            }
+
+    QString reqUrl = repl->url().toString();
+
+    QString dirSuffix="";
+    if(reqUrl.contains("/programs/")==true){
+        dirSuffix = "programs";
+    }
+    else if(reqUrl.contains("/projects/")==true){
+        dirSuffix = "projects";
+    }
+    QUrl url = repl->url();
+    if(repl->error()){
+//                qDebug("Download of %s failed: %s\n",
+//                        url.toEncoded().constData(),
+//                        qPrintable(repl->errorString()));
+        emit msg(QString("WEB:Download of %1 failed: %2")
+                 .arg(url.toEncoded().constData())
+                 .arg(qPrintable(repl->errorString())));
+    }
+    else{
+        if (isHttpRedirect(repl)){
+            fputs("Request was redirected.\n", stderr);
+        }
+        else{
+            QString filename = saveFileName(url);
+            if (saveToDisk(dirSuffix +"_"+filename, repl)) {
+                qDebug("Download of %s succeeded (saved to %s)\n",
+                       url.toEncoded().constData(), qPrintable(filename));
+
+                //QString rootPath = ui->lineEditRootPath->text();
+                QString filePath = dirStruct->downloadDir +"/"+ dirSuffix +"_"+filename;
+
+                QFileInfo  fi(filename);
+                QString fileOutPath = dirStruct->rootDir + "/" + dirSuffix + "/" + fi.baseName();
+                QDir().mkpath(fileOutPath);
+
+                unZip(filePath, fileOutPath);
+            }
+        }
     }
 }
 
