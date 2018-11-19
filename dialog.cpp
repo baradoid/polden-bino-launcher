@@ -1080,6 +1080,7 @@ void Dialog::handleUpdateUi()
     }
 
     ui->lineEdit_ComDemoTime->setText(QString::number(demoRemTime, 'f', 1));
+    ui->lineEdit_comFwmVer->setText(com->firmwareVer);
 
     //
 }

@@ -37,7 +37,7 @@ bool Com::open()
 {
     bool ret = QSerialPort::open(QIODevice::ReadWrite);
     if(ret == true){
-        //sendCmd("?");
+        sendCmd("ver\r\n");
         //checkIspTimer.setSingleShot(true);
         //checkIspTimer.setInterval(500);
         //checkIspTimer.start();
@@ -74,6 +74,11 @@ void Com::processStr(QString str)
     }
     else if(str == "U 23130\r0\r\n"){
         sendCmd("G 0 T\r\n");
+    }
+    else if(str.startsWith("compile time:") == true){
+        str.remove("compile time:");
+        str.remove("\r\n");
+        firmwareVer = str;
     }
     else{
         QStringList strList = str.split(" ");

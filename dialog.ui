@@ -284,11 +284,17 @@
    <widget class="QLineEdit" name="lineEdit_comFwmVer">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>70</x>
       <y>50</y>
-      <width>181</width>
+      <width>171</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="text">
+     <string>n/a</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
     <property name="readOnly">
      <bool>true</bool>

@@ -20,6 +20,7 @@ public:
     uint16_t rangeThresh;
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
 
+    QString firmwareVer;
 
     enum TDemoModeState {
         idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
