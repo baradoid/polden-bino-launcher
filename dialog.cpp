@@ -135,9 +135,9 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditRange->setText("n/a");
     ui->lineEditRange_2->setText("n/a");
 
-    ui->lineEditDebugR->setValidator(new QIntValidator(0,50, this));
-    ui->lineEditDebugX->setValidator(new QIntValidator(0,8191, this));
-    ui->lineEditDebugY->setValidator(new QIntValidator(0,8191, this));
+    //ui->lineEditDebugR->setValidator(new QIntValidator(0,50, this));
+    //ui->lineEditDebugX->setValidator(new QIntValidator(0,8191, this));
+    //ui->lineEditDebugY->setValidator(new QIntValidator(0,8191, this));
 
     QString unityBuildPath = settings.value("watchdog/unityBuildExePath").toString();
     appendLogString(QString("restore unity path:\"")+(unityBuildPath.isEmpty()? "n/a":unityBuildPath)+ "\"");
@@ -314,8 +314,8 @@ void Dialog::initComPort()
                 appendLogString(QString("COM: port %1 present. Try open.").arg(mainCom));
                 ui->comComboBox->setCurrentIndex(i);
                 on_pushButtonComOpen_clicked();
-                if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
-                    com->setAudioEnable(true);
+//                if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
+//                    com->setAudioEnable(true);
                 //if(ui->checkBoxInitOnStart->isChecked()){
                 //    on_pushButtonInitiate_clicked();
                 //}
@@ -742,14 +742,14 @@ void Dialog::on_pushButtonSet_clicked()
 
 void Dialog::on_pushButtonDebugSend_clicked()
 {
-    int x,y,r;
-    x = ui->lineEditDebugX->text().toInt();
-    y = ui->lineEditDebugY->text().toInt();
-    r = ui->lineEditDebugR->text().toInt();
-    CbDataUdp cbdata;
-    cbdata.pos1 = (int16_t)x;
-    cbdata.pos2 = (int16_t)y;
-    cbdata.rangeThresh = (int16_t)r;
+//    int x,y,r;
+    //x = ui->lineEditDebugX->text().toInt();
+    //y = ui->lineEditDebugY->text().toInt();
+    //r = ui->lineEditDebugR->text().toInt();
+//    CbDataUdp cbdata;
+//    cbdata.pos1 = (int16_t)x;
+//    cbdata.pos2 = (int16_t)y;
+//    cbdata.rangeThresh = (int16_t)r;
 //    for(int r=0; r<ui->listWidgetClients->count(); r++){
 //        TSenderInfo *sndInfo = (TSenderInfo*)ui->listWidgetClients->item(r)->data(Qt::UserRole).toInt();
 //        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
@@ -1130,8 +1130,8 @@ void Dialog::handleWriteCBParamsTimeout()
         if(cbWriteParamsCount > 0){
             cbWriteParamsCount--;
 
-            if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
-                com->setAudioEnable(true);
+//            if(ui->checkBoxAudioEnableOnStartup->isChecked() == true)
+//                com->setAudioEnable(true);
         }
         else{
             //writeCbParamsTimer->stop();

@@ -1,10 +1,12 @@
 #include "com.h"
+#include <QThread>
 
 Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Val(-1), enc2Val(-1), distVal(-1),
     enc1Offset(0), enc2Offset(0),
     comPacketsRcvd(0), comErrorPacketsRcvd(0),
-    demoModePeriod(this), demoModeState(idle)
+    demoModePeriod(this), demoModeState(idle),
+    checkIspTimer(this)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),
@@ -21,6 +23,10 @@ Com::Com(QObject *parent) : QSerialPort(parent),
 //    demoModeTimeOut.setInterval(/*120*/ 15*1000);
 //    demoModeTimeOut.start();
 
+    connect(&checkIspTimer, SIGNAL(timeout()),
+                    this, SLOT(handleCheckIspRunning()));
+
+
     connect(&demoModePeriod, SIGNAL(timeout()),
             this, SLOT(handleDemoModePeriod()));
 
@@ -29,7 +35,14 @@ Com::Com(QObject *parent) : QSerialPort(parent),
 
 bool Com::open()
 {
-    return QSerialPort::open(QIODevice::ReadWrite);
+    bool ret = QSerialPort::open(QIODevice::ReadWrite);
+    if(ret == true){
+        //sendCmd("?");
+        //checkIspTimer.setSingleShot(true);
+        //checkIspTimer.setInterval(500);
+        //checkIspTimer.start();
+    }
+    return ret;
 }
 
 void Com::processStr(QString str)
@@ -40,33 +53,62 @@ void Com::processStr(QString str)
 //        str.remove("\r\n");
 //        qDebug() << "string length " << str.length() << "not equal 41" << qPrintable(str);
 //    }
-    QStringList strList = str.split(" ");
-    if(strList.size() >= 3){
-        int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
-        int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
-        int dist = strList[2].toInt(Q_NULLPTR, 10);
-        //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
-        //ui->lineEditEnc1->setText(QString::number(xPos1));
-        //ui->lineEditEnc2->setText(QString::number(xPos2));
-        //ui->lineEditTerm1->setText(QString::number(temp));
-        //qDebug() << xPos1 << xPos2;
-
-        //rangeThresh = ui->lineEditRangeThresh->text().toInt();
-
-        //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
-
-        enc1Val = xPos1;
-        enc2Val = xPos2;
-        distVal = dist;
-
-        //enc1Val = xPos1;
-        //enc2Val = xPos2;
-        //distVal = dist;
-
-        //sendPosData();
-        emit newPosData(xPos1, xPos2, dist);
-
+    if(str == "enter ISP OK\n"){
+        QThread::msleep(200);
+        sendCmd("?");
     }
+    else if(str == "Synchronized\r\n"){
+        qDebug("\"Synchronized\" recvd");
+        emit msg("ISP running");
+        checkIspTimer.stop();
+        sendCmd("Synchronized\r\n");
+
+        //sendIspGoCmd();
+    }
+    else if(str == "Synchronized\rOK\r\n"){
+        qDebug("\"Synchronized OK\" recvd");
+        sendCmd("4000\r\n");
+    }
+    else if(str == "4000\rOK\r\n"){
+        sendCmd("U 23130\r\n");
+    }
+    else if(str == "U 23130\r0\r\n"){
+        sendCmd("G 0 T\r\n");
+    }
+    else{
+        QStringList strList = str.split(" ");
+        if(strList.size() >= 3){
+            int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
+            int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
+            int dist = strList[2].toInt(Q_NULLPTR, 10);
+            //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
+            //ui->lineEditEnc1->setText(QString::number(xPos1));
+            //ui->lineEditEnc2->setText(QString::number(xPos2));
+            //ui->lineEditTerm1->setText(QString::number(temp));
+            //qDebug() << xPos1 << xPos2;
+
+            //rangeThresh = ui->lineEditRangeThresh->text().toInt();
+
+            //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
+
+            if(dist < 30)
+                resetDemoModeTimer();
+
+            if(demoModeState == idle){
+                enc1Val = xPos1;
+                enc2Val = xPos2;
+                distVal = dist;
+            }
+
+            //enc1Val = xPos1;
+            //enc2Val = xPos2;
+            //distVal = dist;
+
+            //sendPosData();
+            emit newPosData(xPos1, xPos2, dist);
+        }
+    }
+
 
     //appendPosToGraph(xPos);
 
@@ -88,7 +130,7 @@ void Com::handleSerialReadyRead()
             if(recvStr.length() != 17){
                 comErrorPacketsRcvd++;
             }
-            resetDemoModeTimer();
+
             processStr(recvStr);
             recvStr.clear();
         }
@@ -110,15 +152,33 @@ void Com::sendCmd(const char* s)
 {
     if(isOpen()){
         QString debStr(s);
-        debStr.remove('\n');
+        debStr.remove("\r\n");
         qInfo("send: %s, sended %d", qPrintable(debStr), write(s));
     }
+}
+
+void Com::sendIspGoCmd()
+{
+    sendCmd("G 0 T\r\n");
 }
 
 void Com::setZero()
 {
     enc1Offset = enc1Val;
     enc2Offset = enc2Val;
+}
+
+void Com::handleCheckIspRunning()
+{
+    qDebug("handleCheckIspRunning");
+    emit msg(QString("ISP timeout. Start ISP"));
+    sendCmd("isp\r\n");
+
+    //QTimer::singleShot(100, [=](){
+        //sendCmd("?");
+    //});
+
+
 }
 
 void Com::resetDemoModeTimer()

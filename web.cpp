@@ -464,24 +464,24 @@ void Web::processTask(QString task)
         installProgram(pathParts[1]);
     }
     else if(taskType == "uninstall_program"){
-        emit msg("uninstall program");
+//        emit msg("uninstall program");
 //        appendLogString("uninstall program task");
 //        qDebug() << "uninstall program task";
 //        uninstallProgram("");
     }
     else if(taskType == "uninstall_project"){
-        emit msg("uninstall project");
+//        emit msg("uninstall project");
 //        appendLogString("uninstall project task");
 //        qDebug() << "uninstall project task";
     }
     else if(taskType == "upload"){
-        emit msg("upload");
-        uploadPath();
+//        emit msg("upload");
+//        uploadPath();
 //        appendLogString("upload task");
 //        qDebug() << "upload task";
     }
     else if(taskType == "delete"){
-        emit msg("delete");
+//        emit msg("delete");
 //        appendLogString("delete task");
 //        qDebug() << "delete task";
     }

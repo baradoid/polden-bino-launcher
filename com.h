@@ -38,18 +38,21 @@ public:
 private:            
     int recvdComPacks, bytesRecvd;    
     QString recvStr;    
+    QTimer checkIspTimer;
 
     void processStr(QString str);
     void sendCmd(const char* s);
 
+    void sendIspGoCmd();
     void resetDemoModeTimer();
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
     void msg(QString);
 
-public slots:
 private slots:
     void handleSerialReadyRead();    
     void handleDemoModePeriod();
+    void handleCheckIspRunning();
+
 };
