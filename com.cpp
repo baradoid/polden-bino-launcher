@@ -56,7 +56,17 @@ void Com::processStr(QString str)
             str.remove("\r\n");
             firmwareVer = str;
         }
+        else if(str.startsWith("sysclk") == true){
+
+        }
+        else if(str.startsWith("ADC") == true){
+
+        }
         else{
+            if(str.length() != 17){
+                comErrorPacketsRcvd++;
+            }
+
             QStringList strList = str.split(" ");
             if(strList.size() >= 3){
                 int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
@@ -154,9 +164,6 @@ void Com::handleSerialReadyRead()
             //qInfo("strLen %d", recvStr.length());
             comPacketsRcvd++;
             //appendLogString(QString("strLen:") + QString::number(recvStr.length()));
-            if(recvStr.length() != 17){
-                comErrorPacketsRcvd++;
-            }
 
             processStr(recvStr);
             recvStr.clear();
