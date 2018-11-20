@@ -149,6 +149,8 @@ private slots:
     void handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
 
     void on_pushButton_ComDemoStart_clicked();
+    void on_checkBox_demoEna_clicked(bool checked);
+    void on_pushButton_ComStartIsp_clicked();
 };
 
 #endif // DIALOG_H

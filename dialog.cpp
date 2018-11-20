@@ -247,6 +247,11 @@ Dialog::Dialog(QWidget *parent) :
 
     //QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
 
+    bool bDemoEna = settings.value("demoEnable", 10).toBool();
+    appendLogString(QString("COM:demo ")+(bDemoEna? "enable":"disable"));
+    ui->checkBox_demoEna->setChecked(bDemoEna);
+    on_checkBox_demoEna_clicked(bDemoEna);
+
 
 
     web = new Web(this);
@@ -1079,7 +1084,7 @@ void Dialog::handleUpdateUi()
         break;
     }
 
-    ui->lineEdit_ComDemoTime->setText(QString::number(demoRemTime, 'f', 1));
+    ui->lineEdit_ComDemoTime->setText(QString::number((int)demoRemTime/*, 'f', 1*/));
     ui->lineEdit_comFwmVer->setText(com->firmwareVer);
 
     //
@@ -1338,13 +1343,29 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
 
 void Dialog::on_pushButton_ComDemoStart_clicked()
 {
-    if(ui->pushButton_ComDemoStart->text() == "start demo"){
-        ui->pushButton_ComDemoStart->setText("stop demo");
+    if(ui->pushButton_ComDemoStart->text() == "Start demo"){
+        ui->pushButton_ComDemoStart->setText("Stop demo");
         com->startDemo();
     }
-    else if(ui->pushButton_ComDemoStart->text() == "stop demo"){
-        ui->pushButton_ComDemoStart->setText("start demo");
+    else if(ui->pushButton_ComDemoStart->text() == "Stop demo"){
+        ui->pushButton_ComDemoStart->setText("Start demo");
         com->stopDemo();
 
     }
+}
+
+void Dialog::on_checkBox_demoEna_clicked(bool checked)
+{
+    settings.setValue("demoEnable", checked);
+
+    ui->lineEdit_ComDemoState->setEnabled(checked);
+    ui->lineEdit_ComDemoTime->setEnabled(checked);
+    ui->pushButton_ComDemoStart->setEnabled(checked);
+    com->enableDemo(checked);
+
+}
+
+void Dialog::on_pushButton_ComStartIsp_clicked()
+{
+    com->startIsp();
 }

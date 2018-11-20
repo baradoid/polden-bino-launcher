@@ -4,7 +4,6 @@
 #include <QSerialPort>
 #include <QTimer>
 
-
 class Com : public QSerialPort
 {
     Q_OBJECT
@@ -35,6 +34,20 @@ public:
     void setZero();
     void startDemo();
     void stopDemo();
+    void enableDemo(bool);
+
+    enum TEnterIspState{
+        idleIspState,
+        waitSynchronizedIspState,
+        waitSynchronizedOkIspState,
+        waitSynchronizedClkOKIspState,
+        waitUnlockOkIspState,
+        waitGoOkIspState
+    };
+    Q_ENUM(TEnterIspState)
+
+    TEnterIspState ispState;
+    void startIsp();
 
 private:            
     int recvdComPacks, bytesRecvd;    

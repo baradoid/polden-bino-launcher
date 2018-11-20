@@ -1,12 +1,13 @@
 #include "com.h"
 #include <QThread>
+#include <QDebug>
 
 Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Val(-1), enc2Val(-1), distVal(-1),
     enc1Offset(0), enc2Offset(0),
     comPacketsRcvd(0), comErrorPacketsRcvd(0),
     demoModePeriod(this), demoModeState(idle),
-    checkIspTimer(this)
+    checkIspTimer(this),ispState(idleIspState)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),
@@ -48,75 +49,96 @@ bool Com::open()
 void Com::processStr(QString str)
 {
     recvdComPacks++;
-    //qDebug() << str.length() <<":" <<str;
-//    if(str.length() != 41){
-//        str.remove("\r\n");
-//        qDebug() << "string length " << str.length() << "not equal 41" << qPrintable(str);
-//    }
-    if(str == "enter ISP OK\n"){
-        QThread::msleep(200);
-        sendCmd("?");
-    }
-    else if(str == "Synchronized\r\n"){
-        qDebug("\"Synchronized\" recvd");
-        emit msg("ISP running");
-        checkIspTimer.stop();
-        sendCmd("Synchronized\r\n");
 
-        //sendIspGoCmd();
-    }
-    else if(str == "Synchronized\rOK\r\n"){
-        qDebug("\"Synchronized OK\" recvd");
-        sendCmd("4000\r\n");
-    }
-    else if(str == "4000\rOK\r\n"){
-        sendCmd("U 23130\r\n");
-    }
-    else if(str == "U 23130\r0\r\n"){
-        sendCmd("G 0 T\r\n");
-    }
-    else if(str.startsWith("compile time:") == true){
-        str.remove("compile time:");
-        str.remove("\r\n");
-        firmwareVer = str;
-    }
-    else{
-        QStringList strList = str.split(" ");
-        if(strList.size() >= 3){
-            int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
-            int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
-            int dist = strList[2].toInt(Q_NULLPTR, 10);
-            //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
-            //ui->lineEditEnc1->setText(QString::number(xPos1));
-            //ui->lineEditEnc2->setText(QString::number(xPos2));
-            //ui->lineEditTerm1->setText(QString::number(temp));
-            //qDebug() << xPos1 << xPos2;
+    if(ispState == idleIspState){
+        if(str.startsWith("compile time:") == true){
+            str.remove("compile time:");
+            str.remove("\r\n");
+            firmwareVer = str;
+        }
+        else{
+            QStringList strList = str.split(" ");
+            if(strList.size() >= 3){
+                int xPos1 = strList[0].toInt(Q_NULLPTR, 16);
+                int xPos2 = strList[1].toInt(Q_NULLPTR, 16);
+                int dist = strList[2].toInt(Q_NULLPTR, 10);
+                //float temp = strList[2].toInt(Q_NULLPTR, 10)/10.;
+                //ui->lineEditEnc1->setText(QString::number(xPos1));
+                //ui->lineEditEnc2->setText(QString::number(xPos2));
+                //ui->lineEditTerm1->setText(QString::number(temp));
+                //qDebug() << xPos1 << xPos2;
 
-            //rangeThresh = ui->lineEditRangeThresh->text().toInt();
+                //rangeThresh = ui->lineEditRangeThresh->text().toInt();
 
-            //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
+                //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
 
-            if(dist < 30)
-                resetDemoModeTimer();
+                if(dist < 30)
+                    resetDemoModeTimer();
 
-            if(demoModeState == idle){
-                enc1Val = xPos1;
-                enc2Val = xPos2;
-                distVal = dist;
+                if(demoModeState == idle){
+                    enc1Val = xPos1;
+                    enc2Val = xPos2;
+                    distVal = dist;
+                }
+
+                //enc1Val = xPos1;
+                //enc2Val = xPos2;
+                //distVal = dist;
+
+                //sendPosData();
+                emit newPosData(xPos1, xPos2, dist);
             }
-
-            //enc1Val = xPos1;
-            //enc2Val = xPos2;
-            //distVal = dist;
-
-            //sendPosData();
-            emit newPosData(xPos1, xPos2, dist);
         }
     }
+    else{
+
+        //qDebug()<< ispState << ": " << qPrintable(str);
+        switch (ispState) {
+        case waitSynchronizedIspState:
+            if(str == "enter ISP OK\n"){
+                QThread::msleep(100);
+                sendCmd("?");
+            }
+            else if(str == "Synchronized\r\n"){
+                //qDebug("\"Synchronized\" recvd");
+                emit msg("ISP running");
+                checkIspTimer.stop();
+                sendCmd("Synchronized\r\n");
+                //sendIspGoCmd();
+                ispState = waitSynchronizedOkIspState;
+            }
+            break;
+        case waitSynchronizedOkIspState:
+            if(str == "OK\r\n"){
+                //qDebug("\"Synchronized OK\" recvd");
+                sendCmd("4000\r\n");
+                ispState = waitSynchronizedClkOKIspState;
+            }
+            break;
+        case waitSynchronizedClkOKIspState:
+            if(str == "OK\r\n"){
+                sendCmd("U 23130\r\n");
+                ispState = waitUnlockOkIspState;
+            }
+            break;
+        case waitUnlockOkIspState:
+            if(str == "0\r\n"){
+                sendCmd("G 0 T\r\n");
+                ispState = waitGoOkIspState;
+            }
+            break;
+        case waitGoOkIspState:
+            if(str == "0\r\n"){
+                ispState = idleIspState;
+                emit msg(QString("user fwm running"));
+            }
+            break;
 
 
-    //appendPosToGraph(xPos);
-
+        default:
+            break;
+        }
+    }
 }
 
 
@@ -158,7 +180,8 @@ void Com::sendCmd(const char* s)
     if(isOpen()){
         QString debStr(s);
         debStr.remove("\r\n");
-        qInfo("send: %s, sended %d", qPrintable(debStr), write(s));
+        int iSnd = write(s);
+        //qInfo("send: %s, sended %d", qPrintable(debStr), iSnd));
     }
 }
 
@@ -206,6 +229,14 @@ void Com::stopDemo()
 {
     resetDemoModeTimer();
 
+}
+
+void Com::enableDemo(bool bEna)
+{
+    resetDemoModeTimer();
+    if(bEna == false){
+        demoModePeriod.stop();
+    }
 }
 
 void Com::handleDemoModePeriod()
@@ -272,3 +303,8 @@ void Com::handleDemoModePeriod()
     emit newPosData(0, 0, 0);
 }
 
+void Com::startIsp()
+{
+    sendCmd("isp\r\n");
+    ispState = waitSynchronizedIspState;
+}

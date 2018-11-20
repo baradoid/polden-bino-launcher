@@ -101,7 +101,7 @@
      <x>10</x>
      <y>10</y>
      <width>251</width>
-     <height>151</height>
+     <height>141</height>
     </rect>
    </property>
    <property name="title">
@@ -153,7 +153,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>90</y>
+      <y>80</y>
       <width>51</width>
       <height>16</height>
      </rect>
@@ -166,7 +166,7 @@
     <property name="geometry">
      <rect>
       <x>60</x>
-      <y>90</y>
+      <y>80</y>
       <width>61</width>
       <height>20</height>
      </rect>
@@ -182,7 +182,7 @@
     <property name="geometry">
      <rect>
       <x>130</x>
-      <y>90</y>
+      <y>80</y>
       <width>51</width>
       <height>16</height>
      </rect>
@@ -195,7 +195,7 @@
     <property name="geometry">
      <rect>
       <x>180</x>
-      <y>90</y>
+      <y>80</y>
       <width>61</width>
       <height>20</height>
      </rect>
@@ -205,67 +205,6 @@
     </property>
     <property name="readOnly">
      <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_30">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>120</y>
-      <width>31</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Демо:</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEdit_ComDemoState">
-    <property name="geometry">
-     <rect>
-      <x>50</x>
-      <y>120</y>
-      <width>71</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEdit_ComDemoTime">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>120</y>
-      <width>41</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_ComDemoStart">
-    <property name="geometry">
-     <rect>
-      <x>180</x>
-      <y>120</y>
-      <width>61</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>start demo</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_9">
@@ -298,6 +237,19 @@
     </property>
     <property name="readOnly">
      <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_ComStartIsp">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>110</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Start ISP</string>
     </property>
    </widget>
   </widget>
@@ -1685,6 +1637,80 @@ zero</string>
      <normaloff>:/res/images/folderopenicon.png</normaloff>:/res/images/folderopenicon.png</iconset>
    </property>
   </widget>
+  <widget class="QGroupBox" name="groupBox_4">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>150</y>
+     <width>251</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Демо режим</string>
+   </property>
+   <widget class="QPushButton" name="pushButton_ComDemoStart">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>20</y>
+      <width>61</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Start demo</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_ComDemoTime">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>20</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_ComDemoState">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>20</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_demoEna">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>вкл</string>
+    </property>
+   </widget>
+  </widget>
   <zorder>groupBox_3</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
@@ -1703,6 +1729,7 @@ zero</string>
   <zorder>label_29</zorder>
   <zorder>pushButtonSelectRootPath</zorder>
   <zorder>pushButton_showRootPath</zorder>
+  <zorder>groupBox_4</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
