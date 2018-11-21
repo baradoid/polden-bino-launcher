@@ -14,6 +14,7 @@
 #include "web.h"
 #include "com.h"
 #include "utils.h"
+#include "unity.h"
 
 namespace Ui {
 class Dialog;
@@ -110,10 +111,12 @@ private:
     //TWebState webState;
 //    QString guid;
     Web *web;
-    Com *com;
+    Com *com;    
 
     void setConnectionError(QString errStr);
     void setConnectionSuccess();
+
+    Unity *unity;
 
 private slots:
     void handleReadPendingDatagrams();

@@ -27,13 +27,15 @@ SOURCES += \
         dialog.cpp \
     web.cpp \
     utils.cpp \
-    com.cpp
+    com.cpp \
+    unity.cpp
 
 HEADERS += \
         dialog.h \
     web.h \
     utils.h \
-    com.h
+    com.h \
+    unity.h
 
 FORMS += \
         dialog.ui

@@ -61,8 +61,8 @@ Dialog::Dialog(QWidget *parent) :
     ui->lineEditLogPath->setText(dirStruct.logsDir);
     appendLogFileString("\r\n");
     appendLogFileString("--- start");
-    appendLogString(QString("restore root dir:\"")+(dirStruct.rootDir.isEmpty()? "n/a":dirStruct.rootDir)+ "\"");
-    appendLogString(QString("restore log dir:\"")+(dirStruct.logsDir.isEmpty()? "n/a":dirStruct.logsDir)+ "\"");
+    appendLogString(QString("root dir:\"")+(dirStruct.rootDir.isEmpty()? "n/a":dirStruct.rootDir)+ "\"");
+    appendLogString(QString("log dir:\"")+(dirStruct.logsDir.isEmpty()? "n/a":dirStruct.logsDir)+ "\"");
 
     ui->lineEditHostName->setText(hostName);
     appendLogString(QString("hostname: \"") + hostName + "\"");
@@ -272,6 +272,8 @@ Dialog::Dialog(QWidget *parent) :
 
     web->start();
 
+    unity = new Unity(this);
+
 }
 
 
@@ -344,11 +346,15 @@ void Dialog::initRootPathControl()
     connect(ui->pushButtonSelectRootPath, &QPushButton::clicked,
         [this](){
         QString rootPath = ui->lineEditRootPath->text();
+        if(rootPath.isEmpty()){
+            rootPath = QDir::currentPath();
+        }
         rootPath = QFileDialog::getExistingDirectory(this, tr("Select root dir"),
                                                         rootPath,
                                                         QFileDialog::ShowDirsOnly
                                                         | QFileDialog::DontResolveSymlinks);
         if(rootPath.isEmpty() == false){
+            appendLogString(QString("new root path selected:\"") + rootPath + "\"");
             settings.setValue("rootPath", rootPath);
             ui->lineEditRootPath->setText(rootPath);
             ui->lineEditRootPath->setToolTip(rootPath);
@@ -370,7 +376,8 @@ void Dialog::initPathStruct(QString rootDir)
     dirStruct.downloadDir = rootDir + "/download";
     dirStruct.logsDir = rootDir + "/logs_" + QHostInfo::localHostName();
 
-    QDir().mkdir(dirStruct.rootDir);
+
+    QDir().mkdir(dirStruct.rootDir);        
     QDir().mkdir(dirStruct.downloadDir);
     QDir().mkdir(dirStruct.logsDir);
 
