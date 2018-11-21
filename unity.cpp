@@ -30,66 +30,32 @@ void Unity::handleReadPendingDatagrams()
         QString dData(datagram.data());
         if(dData == "reg"){
             bool bExist = false;
-
-            bExist = clientsMap.keys().contains(sAddrStr);
-
+            bExist = clientsMap.contains(sAddrStr);
             emit msg("UDP client reg: "+datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort()));
             if(bExist == false){
-//                TSenderInfo *pSI = new TSenderInfo;
-//                pSI->addr = datagram.senderAddress();
-//                pSI->port = datagram.senderPort();
-//                pSI->lastHbaRecvd.start();
-//                pSI->bHbaRecvd = true;
-
-////                ui->listWidgetClients->addItem(sAddrStr);
-////                ui->listWidgetClients->item(ui->listWidgetClients->count()-1)->setData(Qt::UserRole, (int)pSI);
-
-//                int curRowInd = ui->tableWidgetClients->rowCount();
-//                ui->tableWidgetClients->setRowCount(curRowInd+1);
-//                QTableWidgetItem *twi = new QTableWidgetItem(sAddrStr);
-//                twi->setData(Qt::UserRole, (int)pSI);
-//                twi->setTextAlignment(Qt::AlignCenter);
-//                ui->tableWidgetClients->setItem(curRowInd, 0, twi);
-//                twi = new QTableWidgetItem("n/a");
-//                twi->setTextAlignment(Qt::AlignCenter);
-//                ui->tableWidgetClients->setItem(curRowInd, 1, twi);
-//                twi = new QTableWidgetItem("n/a");
-//                twi->setTextAlignment(Qt::AlignCenter);
-//                ui->tableWidgetClients->setItem(curRowInd, 2, twi);
-//                twi = new QTableWidgetItem("n/a");
-//                twi->setTextAlignment(Qt::AlignCenter);
-//                ui->tableWidgetClients->setItem(curRowInd, 3, twi);
-//                ui->tableWidgetClients->resizeColumnsToContents();
+                clientsMap[sAddrStr].addr = datagram.senderAddress();
+                clientsMap[sAddrStr].port = datagram.senderPort();
+                clientsMap[sAddrStr].lastHbaRecvd.start();
+                clientsMap[sAddrStr].bHbaRecvd = true;
             }
         }
         else if(dData.startsWith("hba") == true){
-//            for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-//                QString itText = ui->tableWidgetClients->item(r, 0)->text();
-//                TSenderInfo *pSI = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-//                if(itText == sAddrStr){
-//                    //pSI->lastHbaRecvd.restart();
-//                    pSI->bHbaRecvd = true;
-//                    //qDebug() << pSI->lastHbaRecvd.elapsed();
-//                    ui->tableWidgetClients->item(r, 1)->setText(QString::number(pSI->lastHbaRecvd.elapsed()));
-//                    if(dData.length() > 3){
-//                        //qDebug() << qPrintable(dData);
-//                        QStringList strL =  dData.split(" ");
-//                        strL[1].replace(',','.');
-//                        float fps = strL[1].toFloat();
-//                        ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
-//                        ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
-//                    }
-//                    ui->tableWidgetClients->resizeColumnsToContents();
-//                    break;
-//                }
-//            }
-
+            clientsMap[sAddrStr].bHbaRecvd = true;
+            if(dData.length() > 3){
+                //qDebug() << qPrintable(dData);
+                QStringList strL =  dData.split(" ");
+                strL[1].replace(',','.');
+                float fps = strL[1].toFloat();
+                //ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
+                //ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
+            }
         }
         else{
-            qDebug()<< datagram.senderAddress() << datagram.senderPort() << ":" << datagram.data();
+            emit msg(QString("unknown msg from \"%1:%2\": \"")
+                     .arg(datagram.senderAddress().toString())
+                     .arg(datagram.senderPort()) + datagram.data()+  "\"");
+            //qDebug()<< datagram.senderAddress() << datagram.senderPort() << ":" << datagram.data();
         }
-
-
 
     }
     //qDebug("handleReadPendingDatagrams end");
@@ -98,43 +64,63 @@ void Unity::handleReadPendingDatagrams()
 
 void Unity::hbTimerOut()
 {
-//    //qDebug("check1");
-//    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-//        //QListWidgetItem *lwi = ui->listWidgetClients->item(r);
-//        //QString itText = lwi->text();
-//        TSenderInfo *pSI = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-//        //qDebug() << pSI->lastHbaRecvd.elapsed();
-//        //qDebug("check1 %d", pSI->lastHbaRecvd.elapsed() );
-//        if(pSI->lastHbaRecvd.elapsed() > 500){
-//            if(pSI->bHbaRecvd == false){
-//                emit msg(QString("UDP client %1:%2 no answer in timeout 500 ms. delete. ").arg(pSI->addr.toString()).arg(QString::number(pSI->port)));
-//                //qDebug() << "delete client";
-//                //ui->listWidgetClients->takeItem(r);
+    //qDebug("check1");
+    foreach (QString k, clientsMap.keys()) {
+        if(clientsMap[k].lastHbaRecvd.elapsed() > 500){
+            if(clientsMap[k].bHbaRecvd == false){
+                emit msg(QString("UDP client %1:%2 no answer in timeout 500 ms. delete. ")
+                         .arg(k).arg(QString::number(clientsMap[k].port)));
+                //qDebug() << "delete client";
+                clientsMap.remove(k);
+                break;
+                //ui->listWidgetClients->removeItemWidget(lwi);
+            }
+        }
+    }
 
-//                ui->tableWidgetClients->removeRow(r);
-//                delete pSI;
-//                break;
-//                //ui->listWidgetClients->removeItemWidget(lwi);
+    //qDebug("check2");
+    foreach (TSenderInfo si, clientsMap.values()) {
+        if(si.bHbaRecvd == true){
+            si.bHbaRecvd = false;
+            udpSocket->writeDatagram("hb", si.addr, si.port);
+            si.lastHbaRecvd.restart();
+        }
 
-//            }
-//        }
+    }
+    //qDebug("check2 end");
+}
 
+void Unity::sendPosData(uint16_t val1, uint16_t val2, int16_t distVal)
+{
+    CbDataUdp cbdata;
+//    if(horEncSelectBG->checkedId() == 0){
+        cbdata.pos1 = (int16_t)val1&0x1fff;
+        cbdata.pos2 = (int16_t)val2&0x1fff;
 //    }
-
-//    //qDebug("check2");
-//    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-//        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r,0)->data(Qt::UserRole).toInt();
-//        //if(itText == sAddr)
-//        //    bExist = true;
-//        //if(udpSocket->isWritable()){
-//        //}
-//        if(sndInfo->bHbaRecvd == true){
-//            sndInfo->bHbaRecvd = false;
-//            udpSocket->writeDatagram("hb", sndInfo->addr, sndInfo->port);
-//            sndInfo->lastHbaRecvd.restart();
-//        }
-
+//    else if(horEncSelectBG->checkedId() == 1){
+//        cbdata.pos1 = (int16_t)((com->enc2Val-com->enc2Offset)&0x1fff);
+//        cbdata.pos2 = (int16_t)((com->enc1Val-com->enc1Offset)&0x1fff);
 //    }
-//    //qDebug("check2 end");
+//    if(checkEnc1Inv->isChecked())
+//        cbdata.pos1 = 0x1fff - cbdata.pos1;
+//    if(checkEnc2Inv->isChecked())
+//        cbdata.pos2 = 0x1fff - cbdata.pos2;
+//    //cbdata.distance = (int16_t)dist;
+    bool distThreshExceed = false;//ui->checkBoxRangeAlwaysOn->isChecked() ||(com->distVal<com->rangeThresh);
+    cbdata.rangeThresh = distThreshExceed? 1:0;
+
+//    ui->checkBoxThreshExcess->setChecked(distThreshExceed);
+
+//    if((distThreshExceed == true) && (lastDistTreshState == false)){
+//        distanceOverThreshCnt ++ ;
+//        ui->lineEditRangeTreshExceedCount->setText(QString::number(distanceOverThreshCnt));
+//    }
+//    lastDistTreshState = distThreshExceed;
+
+
+    foreach (TSenderInfo si, clientsMap.values()) {
+        //qInfo() << sizeof(CbDataUdp);
+        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), si.addr, si.port);
+    }
 
 }
