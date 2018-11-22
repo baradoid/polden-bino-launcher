@@ -19,6 +19,14 @@ public:
 
     void start();
 
+    enum TWebConnectionState {
+        idleState, connectionRefusedState, loginSuccessState
+    };
+
+    Q_ENUM(TWebConnectionState)
+
+    TWebConnectionState webConnectionState;
+
 private:
     QNetworkAccessManager nam;
     QString guid;

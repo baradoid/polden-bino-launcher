@@ -7,7 +7,8 @@ Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Offset(0), enc2Offset(0),
     comPacketsRcvd(0), comErrorPacketsRcvd(0),
     demoModePeriod(this), demoModeState(idle),
-    checkIspTimer(this),ispState(idleIspState)
+    checkIspTimer(this),ispState(idleIspState),
+    demoCycleCount(0)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),
@@ -82,8 +83,8 @@ void Com::processStr(QString str)
 
                 //qInfo("%d %d %d", distVal, rangeThresh, dist<rangeThresh);
 
-                if(dist < 30)
-                    resetDemoModeTimer();
+//                if(dist < 30)
+//                    resetDemoModeTimer();
 
                 if(demoModeState == idle){
                     enc1Val = xPos1;
@@ -101,7 +102,6 @@ void Com::processStr(QString str)
         }
     }
     else{
-
         //qDebug()<< ispState << ": " << qPrintable(str);
         switch (ispState) {
         case waitSynchronizedIspState:
@@ -218,6 +218,7 @@ void Com::handleCheckIspRunning()
 
 void Com::resetDemoModeTimer()
 {
+    demoCycleCount = 0;
     demoModeSteps = 1;
     demoModeState = idle;
     demoModePeriod.setSingleShot(false);
@@ -241,7 +242,10 @@ void Com::stopDemo()
 void Com::enableDemo(bool bEna)
 {
     resetDemoModeTimer();
-    if(bEna == false){
+    if(bEna ==  true){
+        startDemo();
+    }
+    else{
         demoModePeriod.stop();
     }
 }
@@ -257,8 +261,9 @@ void Com::handleDemoModePeriod()
         if(enc2Val == -1)
             enc2Val = 0;
         emit msg("human interface timeout. Start demo mode");
-        demoModePeriod.setInterval(50);
+        demoModePeriod.setInterval(50);        
         demoModeState = idleTimeout;
+        demoCycleCount++;
         break;
     case idleTimeout:
         demoModeSteps--;
@@ -301,7 +306,7 @@ void Com::handleDemoModePeriod()
         //emit msg("human interface timeout. Start demo mode. walkOut");
         distVal ++;
         if(distVal >= 50){
-            demoModeSteps = 250;
+            demoModeSteps = 400;
             demoModeState = idle;
         }
         break;

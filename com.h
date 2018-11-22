@@ -18,6 +18,7 @@ public:
     //int distVal;
     uint16_t rangeThresh;
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
+    uint32_t demoCycleCount;
 
     QString firmwareVer;
 

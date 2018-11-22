@@ -1649,26 +1649,10 @@ zero</string>
    <property name="title">
     <string>Демо режим</string>
    </property>
-   <widget class="QPushButton" name="pushButton_ComDemoStart">
-    <property name="geometry">
-     <rect>
-      <x>180</x>
-      <y>20</y>
-      <width>61</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>Start demo</string>
-    </property>
-   </widget>
    <widget class="QLineEdit" name="lineEdit_ComDemoTime">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>200</x>
       <y>20</y>
       <width>41</width>
       <height>21</height>
@@ -1684,9 +1668,9 @@ zero</string>
    <widget class="QLineEdit" name="lineEdit_ComDemoState">
     <property name="geometry">
      <rect>
-      <x>50</x>
+      <x>110</x>
       <y>20</y>
-      <width>71</width>
+      <width>81</width>
       <height>21</height>
      </rect>
     </property>
@@ -1708,6 +1692,22 @@ zero</string>
     </property>
     <property name="text">
      <string>вкл</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_ComDemoModeCycleCounter">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>20</y>
+      <width>41</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>

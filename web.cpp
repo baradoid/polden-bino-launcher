@@ -10,7 +10,7 @@
 #include "utils.h"
 
 Web::Web(QObject *parent) : QObject(parent),
-    nam(this)
+    nam(this), webConnectionState(idleState)
 {
     connect(&nam, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(handleNamReplyFinished(QNetworkReply*)));
@@ -105,11 +105,13 @@ void Web::processLoginReply(QNetworkReply* repl)
         readed.replace('|', '&');
         QUrlQuery uq(readed);
 
+        webConnectionState = loginSuccessState;
         guid = uq.queryItemValue("guid");
         emit msg(readed); //appendLogString();
         if(guid.isEmpty() == false){
             emit msg("connection success"); //appendLogString("WEB: connection success");
             emit connSuccess();
+
             QTimer::singleShot(10*1000, this, SLOT(handlePostAliveTimeout()));
             QTimer::singleShot(20*1000, this, SLOT(handlePostTasksTimeout()));
 
@@ -139,8 +141,12 @@ void Web::processLoginReply(QNetworkReply* repl)
     }
     else{
         //setConnectionError(repl->errorString());
-        emit msg("login request error:\"" + repl->errorString() +"\"");
+        if(webConnectionState != connectionRefusedState){
+            webConnectionState = connectionRefusedState;
+            emit msg("login request error:\"" + repl->errorString() +"\"");
+        }
         emit connError(repl->errorString());
+
         QTimer::singleShot(10*1000, this, SLOT(handleWbLoginTimeout()));
     }
 }

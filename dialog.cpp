@@ -11,6 +11,7 @@
 #include <QDesktopServices>
 #include <windows.h>
 #include <QRadioButton>
+#include <QMessageBox>
 
 //#include <foldercompressor.h>
 //#define QUAZIP_STATIC
@@ -272,7 +273,7 @@ Dialog::Dialog(QWidget *parent) :
 
     web->start();
 
-    unity = new Unity(this);
+    //unity = new Unity(this);
 
 }
 
@@ -280,8 +281,6 @@ Dialog::Dialog(QWidget *parent) :
 
 Dialog::~Dialog()
 {
-    QString comName = (ui->comComboBox->currentData().toString());
-    settings.setValue("usbMain", comName);
     settings.setValue("rangeThresh", com->rangeThresh);
 
     appendLogString("--- quit");
@@ -691,7 +690,9 @@ void Dialog::on_pushButtonComOpen_clicked()
 //                         this, SLOT(handleSerialDataWritten(qint64)));
                  ui->pushButtonComOpen->setText("close");
                  //emit showStatusBarMessage("connected", 3000);
-                 //ui->statusBar->showMessage("connected", 2000);
+                 //ui->statusBar->showMessage("connected", 2000);                                                                    
+                 settings.setValue("usbMain", comName);
+
                  recvdComPacks = 0;
                  startRecvTime = QTime::currentTime();
                  cbWriteParamsCount = 3;
@@ -1084,15 +1085,17 @@ void Dialog::handleUpdateUi()
     float demoRemTime = 0;
     switch(com->demoModeState){
     case Com::idle:
-        demoRemTime = com->demoModePeriod.remainingTime()/1000.;
+        demoRemTime = com->demoModePeriod.remainingTime()/100.;
         break;
     default:
-        demoRemTime = com->demoModeSteps/50.;
+        demoRemTime = com->demoModeSteps/25.;
         break;
     }
 
     ui->lineEdit_ComDemoTime->setText(QString::number((int)demoRemTime/*, 'f', 1*/));
     ui->lineEdit_comFwmVer->setText(com->firmwareVer);
+
+    ui->lineEdit_ComDemoModeCycleCounter->setText(QString::number(com->demoCycleCount));
 
     //
 }
@@ -1350,15 +1353,15 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
 
 void Dialog::on_pushButton_ComDemoStart_clicked()
 {
-    if(ui->pushButton_ComDemoStart->text() == "Start demo"){
-        ui->pushButton_ComDemoStart->setText("Stop demo");
-        com->startDemo();
-    }
-    else if(ui->pushButton_ComDemoStart->text() == "Stop demo"){
-        ui->pushButton_ComDemoStart->setText("Start demo");
-        com->stopDemo();
+//    if(ui->pushButton_ComDemoStart->text() == "Start demo"){
+//        ui->pushButton_ComDemoStart->setText("Stop demo");
+//        com->startDemo();
+//    }
+//    else if(ui->pushButton_ComDemoStart->text() == "Stop demo"){
+//        ui->pushButton_ComDemoStart->setText("Start demo");
+//        com->stopDemo();
 
-    }
+//    }
 }
 
 void Dialog::on_checkBox_demoEna_clicked(bool checked)
@@ -1367,12 +1370,22 @@ void Dialog::on_checkBox_demoEna_clicked(bool checked)
 
     ui->lineEdit_ComDemoState->setEnabled(checked);
     ui->lineEdit_ComDemoTime->setEnabled(checked);
-    ui->pushButton_ComDemoStart->setEnabled(checked);
+    ui->lineEdit_ComDemoModeCycleCounter->setEnabled(checked);
+    //ui->pushButton_ComDemoStart->setEnabled(checked);
     com->enableDemo(checked);
 
 }
 
 void Dialog::on_pushButton_ComStartIsp_clicked()
-{
-    com->startIsp();
+{    
+    int ret = QMessageBox::warning(this, QApplication::applicationName(),
+                                   tr("Начать прошивку контроллера кроссплаты?\n"
+                                      "Внимание! Неудачная прошивка потребует физический доступ к кроссплате для перепрошивки"),
+                                   QMessageBox::No | QMessageBox::Yes,
+                                   QMessageBox::No);
+
+    if(ret == QMessageBox::Yes){
+        com->startIsp();
+    }
+
 }
