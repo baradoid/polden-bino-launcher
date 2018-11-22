@@ -1,3 +1,5 @@
+#include <QProcess>
+#include <QFileInfo>
 #include "unity.h"
 
 Unity::Unity(QObject *parent) : QObject(parent)
@@ -140,5 +142,33 @@ void Unity::sendCbData(CbDataUdp &cbData)
     foreach (TSenderInfo si, clientsMap.values()) {
         //qInfo() << sizeof(CbDataUdp);
         udpSocket->writeDatagram((const char*)&cbData, sizeof(CbDataUdp), si.addr, si.port);
+    }
+}
+
+void Unity::restartUnityBuild()
+{
+    QProcess p;
+
+    QFileInfo unityFileInfo(unityPath);
+
+    qDebug() << unityFileInfo.fileName().toLatin1();
+    p.start("taskkill /IM " + unityFileInfo.fileName());
+    if(p.waitForFinished()){
+        emit msg("kill \"" + unityFileInfo.fileName() + "\" ... OK");
+    }
+    else{
+        emit msg("kill \"" + unityFileInfo.fileName() + "\" ... FAIL");
+    }
+    //QString str = ui->lineEditBuildPath->text();
+    if(unityPath.isEmpty() == true){
+        emit msg("Path empty. Nothing to start.");
+        return;
+    }
+    QString unityPathQuoted = "\"" + unityPath + "\"";
+    if(p.startDetached(unityPathQuoted)){
+        emit msg(QString("start \"") + unityPath + "\" ... OK");
+    }
+    else{
+        emit msg(QString("start \"") + unityPath + "\" ... FAIL");
     }
 }

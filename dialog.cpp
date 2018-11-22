@@ -102,22 +102,6 @@ Dialog::Dialog(QWidget *parent) :
         appendLogString("No available screens");
     }
 
-
-//    udpSocket = new QUdpSocket(this);
-//    if(udpSocket->bind(8050)){
-//        appendLogString("udp socket on port 8050 bind OK");
-//    }
-//    else{
-//        appendLogString("udp socket on port 8050 bind FAIL");
-//    }
-
-//    connect(udpSocket, SIGNAL(readyRead()),
-//            this, SLOT(handleReadPendingDatagrams()));
-
-//    hbTimer.setInterval(250);
-//    QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(hbTimerOut()));
-//    hbTimer.start();
-
     //debugPosTimer.setInterval(20);
     //QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
     //debugPosTimer.start();       
@@ -144,7 +128,7 @@ Dialog::Dialog(QWidget *parent) :
     QString unityBuildPath = settings.value("watchdog/unityBuildExePath").toString();
     appendLogString(QString("restore unity path:\"")+(unityBuildPath.isEmpty()? "n/a":unityBuildPath)+ "\"");
     ui->lineEditBuildPath->setText(unityBuildPath);
-    ui->lineEditBuildPath->setToolTip(unityBuildPath);
+    ui->lineEditBuildPath->setToolTip(unityBuildPath);    
 
     ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(10,999, this));
     QString wdTo = settings.value("watchdog/timeout", 10).toString();
@@ -278,6 +262,7 @@ Dialog::Dialog(QWidget *parent) :
     connect(unity, &Unity::msg, [=](QString msg){
         appendLogString("UB:"+msg);
     });
+    unity->setUnityPath(unityBuildPath);
     unity->start();
 
 
@@ -737,8 +722,8 @@ void Dialog::on_pushButtonDebugSend_clicked()
 
 void Dialog::on_pushButtonWDTest_clicked()
 {
-    appendLogString("watchdog: test button");
-    restartUnityBuild();
+    appendLogString("WD: test button");
+    unity->restartUnityBuild();
 }
 
 void Dialog::on_pushButtonWdSelectPath_clicked()
@@ -749,6 +734,7 @@ void Dialog::on_pushButtonWdSelectPath_clicked()
         settings.setValue("watchdog/unityBuildExePath", str);
         ui->lineEditBuildPath->setText(str);
         ui->lineEditBuildPath->setToolTip(str);
+        unity->setUnityPath(str);
     }
 }
 
@@ -770,7 +756,7 @@ void Dialog::handleWdTimeout()
         int wto = ui->lineEditWdTimeOutSecs->text().toInt();
         if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){          
           appendLogString("watchdog: no clients in timeout. Try to restart unity build");
-          restartUnityBuild();
+          unity->restartUnityBuild();
           bUnityStarted = true;
         }
 
@@ -870,32 +856,6 @@ void Dialog::appendLogFileString(QString logString)
 
     }
 }
-
-void Dialog::restartUnityBuild()
-{
-    QProcess p;
-
-    p.start("taskkill /IM VR.exe");
-    if(p.waitForFinished()){
-        appendLogString("kill \"VR.exe\" ... OK");
-    }
-    else{
-        appendLogString("kill \"VR.exe\" ... FAIL");
-    }
-    QString str = ui->lineEditBuildPath->text();    
-    if(str.isEmpty() == true){
-        appendLogString("Path empty. Nothing to start.");
-        return;
-    }
-    str = "\"" + str + "\"";
-    if(p.startDetached(str)){
-        appendLogString(QString("start \"") + str + "\" ... OK");
-    }
-    else{
-        appendLogString(QString("start \"") + str + "\" ... FAIL");
-    }
-}
-
 
 void Dialog::on_checkBoxLogClearIfSizeExceed_clicked()
 {

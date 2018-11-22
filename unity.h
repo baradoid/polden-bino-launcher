@@ -26,9 +26,11 @@ typedef struct{
 #pragma pack(pop)
 
     void sendCbData(CbDataUdp &cbData);
-
+    void restartUnityBuild();
+    void setUnityPath(QString p){unityPath = p;}
 
 private:
+    QString unityPath;
     QUdpSocket *udpSocket;
 
     typedef struct{
@@ -40,10 +42,6 @@ private:
     } TSenderInfo;
 
     QMap<QString, TSenderInfo> clientsMap;
-
-
-
-
     QTimer hbTimer;
 
 signals:
