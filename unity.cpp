@@ -3,6 +3,17 @@
 Unity::Unity(QObject *parent) : QObject(parent)
 {
     udpSocket = new QUdpSocket(this);
+
+    connect(udpSocket, SIGNAL(readyRead()),
+            this, SLOT(handleReadPendingDatagrams()));
+
+    hbTimer.setInterval(250);
+    QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(handleHbTimerOut()));
+
+}
+
+void Unity::start()
+{
     if(udpSocket->bind(8050)){
         emit msg("udp socket on port 8050 bind OK");
     }
@@ -10,11 +21,10 @@ Unity::Unity(QObject *parent) : QObject(parent)
         emit msg("udp socket on port 8050 bind FAIL");
     }
 
-    connect(udpSocket, SIGNAL(readyRead()),
-            this, SLOT(handleReadPendingDatagrams()));
-
+        hbTimer.start();
 
 }
+
 
 void Unity::handleReadPendingDatagrams()
 {
@@ -62,7 +72,7 @@ void Unity::handleReadPendingDatagrams()
 
 }
 
-void Unity::hbTimerOut()
+void Unity::handleHbTimerOut()
 {
     //qDebug("check1");
     foreach (QString k, clientsMap.keys()) {
@@ -123,4 +133,12 @@ void Unity::sendPosData(uint16_t val1, uint16_t val2, int16_t distVal)
         udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), si.addr, si.port);
     }
 
+}
+
+void Unity::sendCbData(CbDataUdp &cbData)
+{
+    foreach (TSenderInfo si, clientsMap.values()) {
+        //qInfo() << sizeof(CbDataUdp);
+        udpSocket->writeDatagram((const char*)&cbData, sizeof(CbDataUdp), si.addr, si.port);
+    }
 }

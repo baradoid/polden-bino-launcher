@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QUdpSocket>
 #include <QNetworkDatagram>
-#include <QtCore/QTimer>
+#include <QTimer>
 #include <QTime>
 #include <QSettings>
 #include <QButtonGroup>
@@ -55,7 +55,7 @@ public:
 private:
     Ui::Dialog *ui;
     QUdpSocket *udpSocket;
-    QTimer hbTimer;
+    //QTimer hbTimer;
     //uint16_t enc1,enc2,r;
 
     bool lastDistTreshState;
@@ -119,8 +119,8 @@ private:
     Unity *unity;
 
 private slots:
-    void handleReadPendingDatagrams();
-    void hbTimerOut();
+//    void handleReadPendingDatagrams();
+//    void hbTimerOut();
 
     //void debugTimerOut();
 

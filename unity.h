@@ -5,6 +5,7 @@
 #include <QNetworkDatagram>
 #include <QTime>
 #include <QMap>
+#include <QTimer>
 
 class Unity : public QObject
 {
@@ -12,7 +13,20 @@ class Unity : public QObject
 public:
     explicit Unity(QObject *parent = nullptr);
 
+    void start();
     void sendPosData(uint16_t val1, uint16_t val2, int16_t distVal);
+
+
+#pragma pack(push,1)
+typedef struct{
+    uint16_t pos1;
+    uint16_t pos2;
+    uint8_t rangeThresh;
+} CbDataUdp;
+#pragma pack(pop)
+
+    void sendCbData(CbDataUdp &cbData);
+
 
 private:
     QUdpSocket *udpSocket;
@@ -27,20 +41,17 @@ private:
 
     QMap<QString, TSenderInfo> clientsMap;
 
-#pragma pack(push,1)
-typedef struct{
-    uint16_t pos1;
-    uint16_t pos2;
-    uint8_t rangeThresh;
-} CbDataUdp;
-#pragma pack(pop)
+
+
+
+    QTimer hbTimer;
 
 signals:
     void msg(QString);
 
 private slots:
     void handleReadPendingDatagrams();
-    void hbTimerOut();
+    void handleHbTimerOut();
 };
 
 #endif // UNITY_H

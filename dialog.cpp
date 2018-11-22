@@ -13,6 +13,7 @@
 #include <QRadioButton>
 #include <QMessageBox>
 
+#include "unity.h"
 //#include <foldercompressor.h>
 //#define QUAZIP_STATIC
 
@@ -102,20 +103,20 @@ Dialog::Dialog(QWidget *parent) :
     }
 
 
-    udpSocket = new QUdpSocket(this);
-    if(udpSocket->bind(8050)){
-        appendLogString("udp socket on port 8050 bind OK");
-    }
-    else{
-        appendLogString("udp socket on port 8050 bind FAIL");
-    }
+//    udpSocket = new QUdpSocket(this);
+//    if(udpSocket->bind(8050)){
+//        appendLogString("udp socket on port 8050 bind OK");
+//    }
+//    else{
+//        appendLogString("udp socket on port 8050 bind FAIL");
+//    }
 
-    connect(udpSocket, SIGNAL(readyRead()),
-            this, SLOT(handleReadPendingDatagrams()));
+//    connect(udpSocket, SIGNAL(readyRead()),
+//            this, SLOT(handleReadPendingDatagrams()));
 
-    hbTimer.setInterval(250);
-    QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(hbTimerOut()));
-    hbTimer.start();    
+//    hbTimer.setInterval(250);
+//    QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(hbTimerOut()));
+//    hbTimer.start();
 
     //debugPosTimer.setInterval(20);
     //QObject::connect(&debugPosTimer, SIGNAL(timeout()), this, SLOT(debugTimerOut()));
@@ -254,7 +255,6 @@ Dialog::Dialog(QWidget *parent) :
     on_checkBox_demoEna_clicked(bDemoEna);
 
 
-
     web = new Web(this);
     web->dirStruct = &dirStruct;
     web->wbUser = wbUser;
@@ -273,7 +273,13 @@ Dialog::Dialog(QWidget *parent) :
 
     web->start();
 
-    //unity = new Unity(this);
+
+    unity = new Unity(this);
+    connect(unity, &Unity::msg, [=](QString msg){
+        appendLogString("UB:"+msg);
+    });
+    unity->start();
+
 
 }
 
@@ -514,139 +520,98 @@ void Dialog::initEncTableWidget()
 
 }
 
-void Dialog::handleReadPendingDatagrams()
-{
-    //qDebug("handleReadPendingDatagrams");
-    while (udpSocket->hasPendingDatagrams()) {
-        QNetworkDatagram datagram = udpSocket->receiveDatagram();
+//void Dialog::handleReadPendingDatagrams()
+//{
+//    //qDebug("handleReadPendingDatagrams");
+//    while (udpSocket->hasPendingDatagrams()) {
+//        QNetworkDatagram datagram = udpSocket->receiveDatagram();
 
-        if(datagram.isValid() == false)
-            continue;
+//        if(datagram.isValid() == false)
+//            continue;
 
-        QString sAddrStr = datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort());
+//        QString sAddrStr = datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort());
 
-        QString dData(datagram.data());
-        if(dData == "reg"){
-            bool bExist = false;
+//        QString dData(datagram.data());
+//        if(dData == "reg"){
+//            bool bExist = false;
 
-            for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-                QString itText = ui->tableWidgetClients->item(r, 0)->text();
-                if(itText == sAddrStr)
-                    bExist = true;
-            }
-            appendLogString("UDP client reg: "+datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort()));
-            if(bExist == false){                
-                TSenderInfo *pSI = new TSenderInfo;
-                pSI->addr = datagram.senderAddress();
-                pSI->port = datagram.senderPort();
-                pSI->lastHbaRecvd.start();
-                pSI->bHbaRecvd = true;
+//            for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+//                QString itText = ui->tableWidgetClients->item(r, 0)->text();
+//                if(itText == sAddrStr)
+//                    bExist = true;
+//            }
+//            appendLogString("UDP client reg: "+datagram.senderAddress().toString() + ":" + QString::number(datagram.senderPort()));
+//            if(bExist == false){
+//                TSenderInfo *pSI = new TSenderInfo;
+//                pSI->addr = datagram.senderAddress();
+//                pSI->port = datagram.senderPort();
+//                pSI->lastHbaRecvd.start();
+//                pSI->bHbaRecvd = true;
 
-//                ui->listWidgetClients->addItem(sAddrStr);
-//                ui->listWidgetClients->item(ui->listWidgetClients->count()-1)->setData(Qt::UserRole, (int)pSI);
+////                ui->listWidgetClients->addItem(sAddrStr);
+////                ui->listWidgetClients->item(ui->listWidgetClients->count()-1)->setData(Qt::UserRole, (int)pSI);
 
-                int curRowInd = ui->tableWidgetClients->rowCount();
-                ui->tableWidgetClients->setRowCount(curRowInd+1);
-                QTableWidgetItem *twi = new QTableWidgetItem(sAddrStr);
-                twi->setData(Qt::UserRole, (int)pSI);
-                twi->setTextAlignment(Qt::AlignCenter);
-                ui->tableWidgetClients->setItem(curRowInd, 0, twi);
-                twi = new QTableWidgetItem("n/a");
-                twi->setTextAlignment(Qt::AlignCenter);
-                ui->tableWidgetClients->setItem(curRowInd, 1, twi);
-                twi = new QTableWidgetItem("n/a");
-                twi->setTextAlignment(Qt::AlignCenter);
-                ui->tableWidgetClients->setItem(curRowInd, 2, twi);
-                twi = new QTableWidgetItem("n/a");
-                twi->setTextAlignment(Qt::AlignCenter);
-                ui->tableWidgetClients->setItem(curRowInd, 3, twi);
-                ui->tableWidgetClients->resizeColumnsToContents();
-            }
-        }
-        else if(dData.startsWith("hba") == true){
-            for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-                QString itText = ui->tableWidgetClients->item(r, 0)->text();
-                TSenderInfo *pSI = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-                if(itText == sAddrStr){
-                    //pSI->lastHbaRecvd.restart();
-                    pSI->bHbaRecvd = true;
-                    //qDebug() << pSI->lastHbaRecvd.elapsed();
-                    ui->tableWidgetClients->item(r, 1)->setText(QString::number(pSI->lastHbaRecvd.elapsed()));
-                    if(dData.length() > 3){
-                        //qDebug() << qPrintable(dData);
-                        QStringList strL =  dData.split(" ");
-                        strL[1].replace(',','.');
-                        float fps = strL[1].toFloat();
-                        ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
-                        ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
-                    }
-                    ui->tableWidgetClients->resizeColumnsToContents();
-                    break;
-                }
-            }
+//                int curRowInd = ui->tableWidgetClients->rowCount();
+//                ui->tableWidgetClients->setRowCount(curRowInd+1);
+//                QTableWidgetItem *twi = new QTableWidgetItem(sAddrStr);
+//                twi->setData(Qt::UserRole, (int)pSI);
+//                twi->setTextAlignment(Qt::AlignCenter);
+//                ui->tableWidgetClients->setItem(curRowInd, 0, twi);
+//                twi = new QTableWidgetItem("n/a");
+//                twi->setTextAlignment(Qt::AlignCenter);
+//                ui->tableWidgetClients->setItem(curRowInd, 1, twi);
+//                twi = new QTableWidgetItem("n/a");
+//                twi->setTextAlignment(Qt::AlignCenter);
+//                ui->tableWidgetClients->setItem(curRowInd, 2, twi);
+//                twi = new QTableWidgetItem("n/a");
+//                twi->setTextAlignment(Qt::AlignCenter);
+//                ui->tableWidgetClients->setItem(curRowInd, 3, twi);
+//                ui->tableWidgetClients->resizeColumnsToContents();
+//            }
+//        }
+//        else if(dData.startsWith("hba") == true){
+//            for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+//                QString itText = ui->tableWidgetClients->item(r, 0)->text();
+//                TSenderInfo *pSI = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
+//                if(itText == sAddrStr){
+//                    //pSI->lastHbaRecvd.restart();
+//                    pSI->bHbaRecvd = true;
+//                    //qDebug() << pSI->lastHbaRecvd.elapsed();
+//                    ui->tableWidgetClients->item(r, 1)->setText(QString::number(pSI->lastHbaRecvd.elapsed()));
+//                    if(dData.length() > 3){
+//                        //qDebug() << qPrintable(dData);
+//                        QStringList strL =  dData.split(" ");
+//                        strL[1].replace(',','.');
+//                        float fps = strL[1].toFloat();
+//                        ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
+//                        ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
+//                    }
+//                    ui->tableWidgetClients->resizeColumnsToContents();
+//                    break;
+//                }
+//            }
 
-        }        
-        else{
-            qDebug()<< datagram.senderAddress() << datagram.senderPort() << ":" << datagram.data();
-        }
+//        }
+//        else{
+//            qDebug()<< datagram.senderAddress() << datagram.senderPort() << ":" << datagram.data();
+//        }
 
 
 
-    }
-    //qDebug("handleReadPendingDatagrams end");
+//    }
+//    //qDebug("handleReadPendingDatagrams end");
 
-}
+//}
 
-void Dialog::hbTimerOut()
-{
-    //qDebug("check1");
-    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-        //QListWidgetItem *lwi = ui->listWidgetClients->item(r);
-        //QString itText = lwi->text();
-        TSenderInfo *pSI = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-        //qDebug() << pSI->lastHbaRecvd.elapsed();
-        //qDebug("check1 %d", pSI->lastHbaRecvd.elapsed() );
-        if(pSI->lastHbaRecvd.elapsed() > 500){
-            if(pSI->bHbaRecvd == false){
-                appendLogString(QString("UDP client %1:%2 no answer in timeout 500 ms. delete. ").arg(pSI->addr.toString()).arg(QString::number(pSI->port)));
-                //qDebug() << "delete client";
-                //ui->listWidgetClients->takeItem(r);
 
-                ui->tableWidgetClients->removeRow(r);
-                delete pSI;
-                break;
-                //ui->listWidgetClients->removeItemWidget(lwi);
 
-            }
-        }
-
-    }
-
-    //qDebug("check2");
-    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r,0)->data(Qt::UserRole).toInt();
-        //if(itText == sAddr)
-        //    bExist = true;
-        //if(udpSocket->isWritable()){
-        //}
-        if(sndInfo->bHbaRecvd == true){
-            sndInfo->bHbaRecvd = false;
-            udpSocket->writeDatagram("hb", sndInfo->addr, sndInfo->port);
-            sndInfo->lastHbaRecvd.restart();
-        }
-
-    }
-    //qDebug("check2 end");
-
-}
-
-#pragma pack(push,1)
-typedef struct{
-    uint16_t pos1;
-    uint16_t pos2;
-    uint8_t rangeThresh;
-} CbDataUdp;
-#pragma pack(pop)
+//#pragma pack(push,1)
+//typedef struct{
+//    uint16_t pos1;
+//    uint16_t pos2;
+//    uint8_t rangeThresh;
+//} CbDataUdp;
+//#pragma pack(pop)
 
 //void Dialog::debugTimerOut()
 //{
@@ -1026,7 +991,7 @@ void Dialog::on_pushButtonEncSetZero_clicked()
 
 void Dialog::sendPosData()
 {
-    CbDataUdp cbdata;
+    Unity::CbDataUdp cbdata;
     if(horEncSelectBG->checkedId() == 0){
         cbdata.pos1 = (int16_t)((com->enc1Val-com->enc1Offset)&0x1fff);
         cbdata.pos2 = (int16_t)((com->enc2Val-com->enc2Offset)&0x1fff);
@@ -1051,12 +1016,13 @@ void Dialog::sendPosData()
     }
     lastDistTreshState = distThreshExceed;
 
+//    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+//        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
+//        //qInfo() << sizeof(CbDataUdp);
+//        udpSocket->writeDatagram((const char*)&cbdata, sizeof(Unity::CbDataUdp), sndInfo->addr, sndInfo->port);
+//    }
 
-    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
-        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
-        //qInfo() << sizeof(CbDataUdp);
-        udpSocket->writeDatagram((const char*)&cbdata, sizeof(CbDataUdp), sndInfo->addr, sndInfo->port);
-    }
+    unity->sendCbData(cbdata);
 }
 
 void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)

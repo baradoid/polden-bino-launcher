@@ -244,9 +244,11 @@ void Com::enableDemo(bool bEna)
     resetDemoModeTimer();
     if(bEna ==  true){
         startDemo();
+        emit msg("start demo mode");
     }
     else{
         demoModePeriod.stop();
+        emit msg("stop demo mode");
     }
 }
 
@@ -260,7 +262,7 @@ void Com::handleDemoModePeriod()
             enc1Val = 0;
         if(enc2Val == -1)
             enc2Val = 0;
-        emit msg("human interface timeout. Start demo mode");
+        //emit msg("human interface timeout. Start demo mode");
         demoModePeriod.setInterval(50);        
         demoModeState = idleTimeout;
         demoCycleCount++;
