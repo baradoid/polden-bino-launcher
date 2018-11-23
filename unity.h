@@ -1,17 +1,47 @@
-#ifndef UNITY_H
-#define UNITY_H
+#pragma once
 
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QTime>
 #include <QMap>
 #include <QTimer>
+#include <QAbstractTableModel>
+
+
+typedef struct{
+    QHostAddress addr;
+    int port;
+
+    QTime lastHbaRecvd;
+    bool bHbaRecvd;
+} TSenderInfo;
+
+class UnityClientsTableModel :  public QAbstractTableModel
+{
+    Q_OBJECT
+public:
+    explicit UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm);
+    int rowCount(const QModelIndex& parent = QModelIndex()) const;
+    int columnCount(const QModelIndex& parent = QModelIndex()) const;
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
+    //inline void setMap(QMap<QString, TSenderInfo> *m) { clientsMap = m; }
+    void dataUpdated();
+
+private:
+    QMap<QString, TSenderInfo> &clientsMap;
+};
+
 
 class Unity : public QObject
 {
     Q_OBJECT
-public:
+public:    
     explicit Unity(QObject *parent = nullptr);
+
+
+    UnityClientsTableModel clientsTableModel;
+
+    QMap<QString, TSenderInfo> clientsMap;
 
     void start();
     void sendPosData(uint16_t val1, uint16_t val2, int16_t distVal);
@@ -33,16 +63,7 @@ private:
     QString unityPath;
     QUdpSocket *udpSocket;
 
-    typedef struct{
-        QHostAddress addr;
-        int port;
-
-        QTime lastHbaRecvd;
-        bool bHbaRecvd;
-    } TSenderInfo;
-
-    QMap<QString, TSenderInfo> clientsMap;
-    QTimer hbTimer;
+    QTimer wdTimer, hbTimer;
 
 signals:
     void msg(QString);
@@ -50,6 +71,6 @@ signals:
 private slots:
     void handleReadPendingDatagrams();
     void handleHbTimerOut();
+    void handleWdTimeout();
 };
 
-#endif // UNITY_H

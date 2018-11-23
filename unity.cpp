@@ -2,7 +2,8 @@
 #include <QFileInfo>
 #include "unity.h"
 
-Unity::Unity(QObject *parent) : QObject(parent)
+Unity::Unity(QObject *parent) : QObject(parent),
+    clientsTableModel(this, clientsMap)
 {
     udpSocket = new QUdpSocket(this);
 
@@ -12,6 +13,9 @@ Unity::Unity(QObject *parent) : QObject(parent)
     hbTimer.setInterval(250);
     QObject::connect(&hbTimer, SIGNAL(timeout()), this, SLOT(handleHbTimerOut()));
 
+    connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
+    wdTimer.setInterval(1000);
+    wdTimer.start();
 }
 
 void Unity::start()
@@ -22,8 +26,7 @@ void Unity::start()
     else{
         emit msg("udp socket on port 8050 bind FAIL");
     }
-
-        hbTimer.start();
+    hbTimer.start();
 
 }
 
@@ -49,6 +52,7 @@ void Unity::handleReadPendingDatagrams()
                 clientsMap[sAddrStr].port = datagram.senderPort();
                 clientsMap[sAddrStr].lastHbaRecvd.start();
                 clientsMap[sAddrStr].bHbaRecvd = true;
+                clientsTableModel.dataUpdated();
             }
         }
         else if(dData.startsWith("hba") == true){
@@ -60,6 +64,7 @@ void Unity::handleReadPendingDatagrams()
                 float fps = strL[1].toFloat();
                 //ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
                 //ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
+                clientsTableModel.dataUpdated();
             }
         }
         else{
@@ -151,7 +156,7 @@ void Unity::restartUnityBuild()
 
     QFileInfo unityFileInfo(unityPath);
 
-    qDebug() << unityFileInfo.fileName().toLatin1();
+    //qDebug() << unityFileInfo.fileName().toLatin1();
     p.start("taskkill /IM " + unityFileInfo.fileName());
     if(p.waitForFinished()){
         emit msg("kill \"" + unityFileInfo.fileName() + "\" ... OK");
@@ -171,4 +176,87 @@ void Unity::restartUnityBuild()
     else{
         emit msg(QString("start \"") + unityPath + "\" ... FAIL");
     }
+}
+
+
+void Unity::handleWdTimeout()
+{
+    //!!!!!!!
+
+    foreach (TSenderInfo si, clientsMap.values()) {
+    //qInfo() << sizeof(CbDataUdp);
+        //wdNoClientsTimeSecs++;
+        emit msg("watchdog: no clients in timeout. Try to restart unity build");
+        restartUnityBuild();
+        //bUnityStarted = true;
+    }
+
+
+//    if(ui->tableWidgetClients->rowCount() == 0){
+//        ui->label_wd_noclients->show();
+//        ui->label_wd_noclients_2->show();
+//        ui->lineEdit_wdNoClientsTimer->show();
+//        wdNoClientsTimeSecs++;
+//        ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
+//        int wto = ui->lineEditWdTimeOutSecs->text().toInt();
+//        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
+//          appendLogString("watchdog: no clients in timeout. Try to restart unity build");
+//          unity->restartUnityBuild();
+//          bUnityStarted = true;
+//        }
+
+//    }
+//    else{
+//        bUnityStarted = false;
+//        ui->label_wd_noclients->hide();
+//        ui->label_wd_noclients_2->hide();
+//        ui->lineEdit_wdNoClientsTimer->hide();
+//        wdNoClientsTimeSecs=0;
+//    }
+    //qDebug("wd");
+
+
+//    updateUptime();
+}
+
+//////////////
+
+UnityClientsTableModel::UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm) :
+    QAbstractTableModel(parent), clientsMap(cm)
+{
+}
+
+int UnityClientsTableModel::rowCount(const QModelIndex& parent) const
+{
+    return clientsMap.count();
+}
+
+int UnityClientsTableModel::columnCount(const QModelIndex & parent) const
+{
+    return 4;
+}
+
+QVariant UnityClientsTableModel::data(const QModelIndex& index, int role) const
+{
+    if(clientsMap.count() == 0)
+        return QVariant();
+    if( role == Qt::DisplayRole ){
+        QString str = QString("%1:%2").arg(index.row()).arg(index.column());
+        return QVariant(str);
+    }
+
+    return QVariant();
+
+
+}
+
+void UnityClientsTableModel::dataUpdated()
+{
+    int rc = clientsMap.count();
+    int cc = 4;
+    emit dataChanged(index(0, 0), index(rc-1, cc-1));
+    //QModelIndex topLeft = createIndex(0,0);
+    //emit a signal to make the view reread identified data
+    //emit dataChanged(topLeft, topLeft);
+    emit layoutChanged();
 }

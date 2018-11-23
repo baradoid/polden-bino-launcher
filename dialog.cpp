@@ -158,8 +158,8 @@ Dialog::Dialog(QWidget *parent) :
     //ui->tableWidgetClients->setItem(0, 1, new QTableWidgetItem("1"));
     //ui->tableWidgetClients->setItem(0, 2, new QTableWidgetItem("2"));
     //ui->tableWidgetClients->resizeColumnsToContents();
-    ui->tableWidgetClients->setColumnCount(4);
-    ui->tableWidgetClients->resizeColumnsToContents();
+    //ui->tableWidgetClients->setColumnCount(4);
+    //ui->tableWidgetClients->resizeColumnsToContents();
 
     connect(&logUpdateTimer, SIGNAL(timeout()), this, SLOT(handleLogUpdateTimeout()));
     logUpdateTimer.setInterval(30*1000);
@@ -259,13 +259,14 @@ Dialog::Dialog(QWidget *parent) :
 
 
     unity = new Unity(this);
+
     connect(unity, &Unity::msg, [=](QString msg){
         appendLogString("UB:"+msg);
     });
+    ui->tableViewUdpClients->setModel(&(unity->clientsTableModel));
+    ui->tableViewUdpClients->resizeColumnsToContents();
     unity->setUnityPath(unityBuildPath);
     unity->start();
-
-
 }
 
 
@@ -277,14 +278,6 @@ Dialog::~Dialog()
     appendLogString("--- quit");
     delete ui;
 }
-
-typedef struct{
-    QHostAddress addr;
-    int port;
-
-    QTime lastHbaRecvd;
-    bool bHbaRecvd;
-} TSenderInfo;
 
 void Dialog::initComPort()
 {
@@ -747,27 +740,28 @@ void Dialog::on_lineEditWdTimeOutSecs_editingFinished()
 
 void Dialog::handleWdTimeout()
 {
-    if(ui->tableWidgetClients->rowCount() == 0){
-        ui->label_wd_noclients->show();
-        ui->label_wd_noclients_2->show();
-        ui->lineEdit_wdNoClientsTimer->show();
-        wdNoClientsTimeSecs++;
-        ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
-        int wto = ui->lineEditWdTimeOutSecs->text().toInt();
-        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){          
-          appendLogString("watchdog: no clients in timeout. Try to restart unity build");
-          unity->restartUnityBuild();
-          bUnityStarted = true;
-        }
+    //!!!!!!!
+//    if(ui->tableWidgetClients->rowCount() == 0){
+//        ui->label_wd_noclients->show();
+//        ui->label_wd_noclients_2->show();
+//        ui->lineEdit_wdNoClientsTimer->show();
+//        wdNoClientsTimeSecs++;
+//        ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
+//        int wto = ui->lineEditWdTimeOutSecs->text().toInt();
+//        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
+//          appendLogString("watchdog: no clients in timeout. Try to restart unity build");
+//          unity->restartUnityBuild();
+//          bUnityStarted = true;
+//        }
 
-    }
-    else{
-        bUnityStarted = false;
-        ui->label_wd_noclients->hide();
-        ui->label_wd_noclients_2->hide();
-        ui->lineEdit_wdNoClientsTimer->hide();
-        wdNoClientsTimeSecs=0;
-    }
+//    }
+//    else{
+//        bUnityStarted = false;
+//        ui->label_wd_noclients->hide();
+//        ui->label_wd_noclients_2->hide();
+//        ui->lineEdit_wdNoClientsTimer->hide();
+//        wdNoClientsTimeSecs=0;
+//    }
     //qDebug("wd");
 
 
@@ -777,7 +771,7 @@ void Dialog::handleWdTimeout()
 void Dialog::on_checkBoxWdEnable_clicked(bool checked)
 {
     settings.setValue("watchdog/ena", checked);
-    appendLogString(QString("push button watchdog %1").arg(checked? "enable" : "disable"));
+    appendLogString(QString("watchdog %1").arg(checked? "on" : "off"));
 
 }
 
@@ -1023,7 +1017,62 @@ void Dialog::handleUpdateUi()
 
     ui->lineEdit_ComDemoModeCycleCounter->setText(QString::number(com->demoCycleCount));
 
-    //
+    //update unity section
+    //check if all exists
+//    QMap<QString, TSenderInfo> &sm = unity->clientsMap;
+//    foreach (QString n, sm.keys()) {
+//        bool bExist = false;
+//        int rc = ui->tableWidgetClients->rowCount();
+//        for(int ri=0; ri<rc; ri++){
+//            QTableWidgetItem *twi = ui->tableWidgetClients->item(ri, 0);
+//            if(twi->text() == n)
+//                bExist = true;
+//        }
+//        if(bExist == false){
+//            ui->tableWidgetClients->setRowCount(rc+1);
+//            QTableWidgetItem *twi = new QTableWidgetItem(n);
+//            twi->setTextAlignment(Qt::AlignCenter);
+//            ui->tableWidgetClients->setItem(rc, 0, twi);
+//            twi = new QTableWidgetItem("n/a");
+//            twi->setTextAlignment(Qt::AlignCenter);
+//            ui->tableWidgetClients->setItem(rc, 1, twi);
+//            twi = new QTableWidgetItem("n/a");
+//            twi->setTextAlignment(Qt::AlignCenter);
+//            ui->tableWidgetClients->setItem(rc, 2, twi);
+//            twi = new QTableWidgetItem("n/a");
+//            twi->setTextAlignment(Qt::AlignCenter);
+//            ui->tableWidgetClients->setItem(rc, 3, twi);
+//            ui->tableWidgetClients->resizeColumnsToContents();
+//        }
+//    }
+
+//    //remove row
+//    int rc = ui->tableWidgetClients->rowCount();
+//    for(int ri=0; ri<rc; ri++){
+//        QTableWidgetItem *twi = ui->tableWidgetClients->item(ri, 0);
+//        QString n = twi->text();
+//        if(sm.contains(n) == false){
+//            ui->tableWidgetClients->removeRow(ri);
+//            rc--;
+//        }
+//    }
+    /*
+    ui->tableWidgetClients->setRowCount(curRowInd+1);
+    QTableWidgetItem *twi = new QTableWidgetItem(sAddrStr);
+    twi->setData(Qt::UserRole, (int)pSI);
+    twi->setTextAlignment(Qt::AlignCenter);
+    ui->tableWidgetClients->setItem(curRowInd, 0, twi);
+    twi = new QTableWidgetItem("n/a");
+    twi->setTextAlignment(Qt::AlignCenter);
+    ui->tableWidgetClients->setItem(curRowInd, 1, twi);
+    twi = new QTableWidgetItem("n/a");
+    twi->setTextAlignment(Qt::AlignCenter);
+    ui->tableWidgetClients->setItem(curRowInd, 2, twi);
+    twi = new QTableWidgetItem("n/a");
+    twi->setTextAlignment(Qt::AlignCenter);
+    ui->tableWidgetClients->setItem(curRowInd, 3, twi);
+    ui->tableWidgetClients->resizeColumnsToContents();
+*/
 }
 
 void Dialog::initAppAutoStartCheckBox()
