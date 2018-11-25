@@ -85,11 +85,11 @@ private:
 
     void initPathStruct(QString rootDir);
 
+    void initUnity();
+
     void processStr(QString str);
 
-    QTimer wdTimer, logUpdateTimer;
-    int wdNoClientsTimeSecs;
-    bool bUnityStarted;
+    QTimer logUpdateTimer;
 
     QString todayLogName();
     QString todayLogPath();
@@ -129,11 +129,6 @@ private slots:
 
     void on_pushButtonSet_clicked();
     void on_pushButtonDebugSend_clicked();
-    void on_pushButtonWDTest_clicked();
-    void on_pushButtonWdSelectPath_clicked();
-    void on_lineEditWdTimeOutSecs_editingFinished();
-    void handleWdTimeout();
-    void on_checkBoxWdEnable_clicked(bool checked);
     //void on_lineEditLogPath_editingFinished();
     //void on_pushButtonLogSelectPath_clicked();
     void on_checkBoxLogClearIfSizeExceed_clicked();
@@ -151,7 +146,7 @@ private slots:
 
     void handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
 
-    void on_pushButton_ComDemoStart_clicked();
+    //void on_pushButton_ComDemoStart_clicked();
     void on_checkBox_demoEna_clicked(bool checked);
     void on_pushButton_ComStartIsp_clicked();
 };

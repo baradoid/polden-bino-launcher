@@ -6,30 +6,34 @@
 #include <QMap>
 #include <QTimer>
 #include <QAbstractTableModel>
+#include <QProcess>
 
 
 typedef struct{
     QHostAddress addr;
     int port;
-
-    QTime lastHbaRecvd;
+    QTime hbSendTime;
+    int lastHbaRecvdTime;
     bool bHbaRecvd;
+    QString resolution;
+    float fps;
 } TSenderInfo;
 
-class UnityClientsTableModel :  public QAbstractTableModel
-{
-    Q_OBJECT
-public:
-    explicit UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm);
-    int rowCount(const QModelIndex& parent = QModelIndex()) const;
-    int columnCount(const QModelIndex& parent = QModelIndex()) const;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-    //inline void setMap(QMap<QString, TSenderInfo> *m) { clientsMap = m; }
-    void dataUpdated();
+//class UnityClientsTableModel :  public QAbstractTableModel
+//{
+//    Q_OBJECT
+//public:
+//    explicit UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm);
+//    int rowCount(const QModelIndex& parent = QModelIndex()) const;
+//    int columnCount(const QModelIndex& parent = QModelIndex()) const;
+//    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
+//    //inline void setMap(QMap<QString, TSenderInfo> *m) { clientsMap = m; }
+//    void dataUpdated();
+//    void rowCountUpdated() { emit layoutChanged(); }
 
-private:
-    QMap<QString, TSenderInfo> &clientsMap;
-};
+//private:
+//    QMap<QString, TSenderInfo> &clientsMap;
+//};
 
 
 class Unity : public QObject
@@ -39,7 +43,7 @@ public:
     explicit Unity(QObject *parent = nullptr);
 
 
-    UnityClientsTableModel clientsTableModel;
+    //UnityClientsTableModel clientsTableModel;
 
     QMap<QString, TSenderInfo> clientsMap;
 
@@ -59,11 +63,25 @@ typedef struct{
     void restartUnityBuild();
     void setUnityPath(QString p){unityPath = p;}
 
+    void setWdTimeOutSecs(int to){wdTimeOutSecs = to;}
+    void setFpsLimit(int fpsLim){fpsLimit = fpsLim;}
+    void setWdEnable(bool bEna){ wdEnable = bEna;}
+    QTime wdNoClientsTime;
+
 private:
+    QProcess p;
     QString unityPath;
     QUdpSocket *udpSocket;
 
     QTimer wdTimer, hbTimer;
+
+    int wdTimeOutSecs;
+    bool wdEnable;
+    int fpsLimit;
+    QTime lastOkFpsTime;
+
+    //int wdNoClientsTimeSecs;
+    //bool bUnityStarted;
 
 signals:
     void msg(QString);

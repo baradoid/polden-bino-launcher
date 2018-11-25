@@ -3,8 +3,9 @@
 #include "unity.h"
 
 Unity::Unity(QObject *parent) : QObject(parent),
-    clientsTableModel(this, clientsMap)
-{
+    wdTimeOutSecs(0), wdEnable(false),
+    p(this), fpsLimit(0)/*, bUnityStarted(false)*/
+{    
     udpSocket = new QUdpSocket(this);
 
     connect(udpSocket, SIGNAL(readyRead()),
@@ -16,6 +17,8 @@ Unity::Unity(QObject *parent) : QObject(parent),
     connect(&wdTimer, SIGNAL(timeout()), this, SLOT(handleWdTimeout()));
     wdTimer.setInterval(1000);
     wdTimer.start();
+
+    wdNoClientsTime.start();
 }
 
 void Unity::start()
@@ -50,21 +53,39 @@ void Unity::handleReadPendingDatagrams()
             if(bExist == false){
                 clientsMap[sAddrStr].addr = datagram.senderAddress();
                 clientsMap[sAddrStr].port = datagram.senderPort();
-                clientsMap[sAddrStr].lastHbaRecvd.start();
+                clientsMap[sAddrStr].hbSendTime.start();
                 clientsMap[sAddrStr].bHbaRecvd = true;
-                clientsTableModel.dataUpdated();
+                clientsMap[sAddrStr].resolution = "n/a";
+                clientsMap[sAddrStr].fps = -1;
+                //clientsTableModel.rowCountUpdated();
             }
         }
         else if(dData.startsWith("hba") == true){
             clientsMap[sAddrStr].bHbaRecvd = true;
             if(dData.length() > 3){
+                //qDebug() << clientsMap[sAddrStr].hbSendTime.elapsed();
+                clientsMap[sAddrStr].lastHbaRecvdTime = clientsMap[sAddrStr].hbSendTime.elapsed();
                 //qDebug() << qPrintable(dData);
                 QStringList strL =  dData.split(" ");
                 strL[1].replace(',','.');
                 float fps = strL[1].toFloat();
-                //ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));
+
+                clientsMap[sAddrStr].fps = fps;
+                clientsMap[sAddrStr].resolution = strL[2];
+
+                if(fps > fpsLimit)
+                    lastOkFpsTime.restart();
+                else{
+                }
+
+
+
+
+                //ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));                
                 //ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
-                clientsTableModel.dataUpdated();
+
+
+                //clientsTableModel.dataUpdated();
             }
         }
         else{
@@ -83,7 +104,7 @@ void Unity::handleHbTimerOut()
 {
     //qDebug("check1");
     foreach (QString k, clientsMap.keys()) {
-        if(clientsMap[k].lastHbaRecvd.elapsed() > 500){
+        if(clientsMap[k].hbSendTime.elapsed() > 500){
             if(clientsMap[k].bHbaRecvd == false){
                 emit msg(QString("UDP client %1:%2 no answer in timeout 500 ms. delete. ")
                          .arg(k).arg(QString::number(clientsMap[k].port)));
@@ -96,11 +117,12 @@ void Unity::handleHbTimerOut()
     }
 
     //qDebug("check2");
-    foreach (TSenderInfo si, clientsMap.values()) {
+    foreach (QString n, clientsMap.keys()) {
+        TSenderInfo &si = clientsMap[n];
         if(si.bHbaRecvd == true){
             si.bHbaRecvd = false;
             udpSocket->writeDatagram("hb", si.addr, si.port);
-            si.lastHbaRecvd.restart();
+            si.hbSendTime.restart();
         }
 
     }
@@ -152,10 +174,11 @@ void Unity::sendCbData(CbDataUdp &cbData)
 
 void Unity::restartUnityBuild()
 {
-    QProcess p;
+    //QProcess p;
 
     QFileInfo unityFileInfo(unityPath);
 
+    p.kill();
     //qDebug() << unityFileInfo.fileName().toLatin1();
     p.start("taskkill /IM " + unityFileInfo.fileName());
     if(p.waitForFinished()){
@@ -170,50 +193,58 @@ void Unity::restartUnityBuild()
         return;
     }
     QString unityPathQuoted = "\"" + unityPath + "\"";
-    if(p.startDetached(unityPathQuoted)){
+    p.start(unityPathQuoted);
+    //if()){
         emit msg(QString("start \"") + unityPath + "\" ... OK");
-    }
-    else{
-        emit msg(QString("start \"") + unityPath + "\" ... FAIL");
-    }
+    //}
+    //else{
+    //    emit msg(QString("start \"") + unityPath + "\" ... FAIL");
+    //}
 }
 
 
 void Unity::handleWdTimeout()
-{
-    //!!!!!!!
-
-    foreach (TSenderInfo si, clientsMap.values()) {
-    //qInfo() << sizeof(CbDataUdp);
-        //wdNoClientsTimeSecs++;
-        emit msg("watchdog: no clients in timeout. Try to restart unity build");
-        restartUnityBuild();
-        //bUnityStarted = true;
-    }
-
-
-//    if(ui->tableWidgetClients->rowCount() == 0){
+{    
+    //qDebug() << p.state();
+    if(clientsMap.isEmpty() == true){
 //        ui->label_wd_noclients->show();
 //        ui->label_wd_noclients_2->show();
-//        ui->lineEdit_wdNoClientsTimer->show();
-//        wdNoClientsTimeSecs++;
+//        ui->lineEdit_wdNoClientsTimer->show();        
 //        ui->lineEdit_wdNoClientsTimer->setText(QString::number(wdNoClientsTimeSecs));
 //        int wto = ui->lineEditWdTimeOutSecs->text().toInt();
-//        if(ui->checkBoxWdEnable->isChecked() && (bUnityStarted==false) && (wdNoClientsTimeSecs > wto)){
-//          appendLogString("watchdog: no clients in timeout. Try to restart unity build");
-//          unity->restartUnityBuild();
-//          bUnityStarted = true;
-//        }
 
-//    }
-//    else{
-//        bUnityStarted = false;
-//        ui->label_wd_noclients->hide();
-//        ui->label_wd_noclients_2->hide();
-//        ui->lineEdit_wdNoClientsTimer->hide();
-//        wdNoClientsTimeSecs=0;
-//    }
+
+        if( wdEnable &&
+           (p.state() == QProcess::NotRunning) &&
+           ((wdNoClientsTime.elapsed()/1000) > wdTimeOutSecs)){
+          emit msg("WD: no clients in timeout. Try to restart unity build");
+          restartUnityBuild();
+          //bUnityStarted = true;
+        }
+
+    }
+    else{
+        wdNoClientsTime.start();
+        int lastOkFpsSecs = lastOkFpsTime.elapsed()/1000;
+        //qDebug() << "lastOkFpsTime " << lastOkFpsSecs ;
+
+        if((lastOkFpsSecs >= 2) && ((lastOkFpsSecs %2) == 0) )
+            emit msg(QString("WD: low fps detected %1 secs").arg(lastOkFpsSecs));
+
+        if(lastOkFpsSecs  > wdTimeOutSecs){
+            emit msg("WD: restart unity on low FPS");
+            restartUnityBuild();
+        }
+    }
     //qDebug("wd");
+
+    //foreach (TSenderInfo si, clientsMap.values()) {
+    //qInfo() << sizeof(CbDataUdp);
+        //wdNoClientsTimeSecs++;
+        //emit msg("watchdog: no clients in timeout. Try to restart unity build");
+        //restartUnityBuild();
+        //bUnityStarted = true;
+    //}
 
 
 //    updateUptime();
@@ -221,42 +252,65 @@ void Unity::handleWdTimeout()
 
 //////////////
 
-UnityClientsTableModel::UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm) :
-    QAbstractTableModel(parent), clientsMap(cm)
-{
-}
+//UnityClientsTableModel::UnityClientsTableModel(QObject *parent, QMap<QString, TSenderInfo> &cm) :
+//    QAbstractTableModel(parent), clientsMap(cm)
+//{
+//}
 
-int UnityClientsTableModel::rowCount(const QModelIndex& parent) const
-{
-    return clientsMap.count();
-}
+//int UnityClientsTableModel::rowCount(const QModelIndex& parent) const
+//{
+//    return clientsMap.count();
+//}
 
-int UnityClientsTableModel::columnCount(const QModelIndex & parent) const
-{
-    return 4;
-}
+//int UnityClientsTableModel::columnCount(const QModelIndex & parent) const
+//{
+//    return 4;
+//}
 
-QVariant UnityClientsTableModel::data(const QModelIndex& index, int role) const
-{
-    if(clientsMap.count() == 0)
-        return QVariant();
-    if( role == Qt::DisplayRole ){
-        QString str = QString("%1:%2").arg(index.row()).arg(index.column());
-        return QVariant(str);
-    }
+//QVariant UnityClientsTableModel::data(const QModelIndex& index, int role) const
+//{
+//    if(clientsMap.count() == 0)
+//        return QVariant();
+//    QVariant ret;
+//    if(role == Qt::DisplayRole) {
 
-    return QVariant();
+//        QString n = clientsMap.keys()[index.row()];
+//        TSenderInfo &si = clientsMap[n];
+
+//        switch(index.column()){
+//        case 0:
+//            //emit QAbstractTableModel::layoutChanged;
+
+//            return n;
+//            break;
+//        case 1:
+//            return QString::number(si.lastHbaRecvd.elapsed());
+//        case 2:
+//            return "fps";
+//            break;
+//        case 3:
+//            return "res";
+//        }
 
 
-}
+//        QString str = QString("%1:%2").arg(index.row()).arg(index.column());
+//        return str;
+//    }
+//    else if(role == Qt::TextAlignmentRole){
+//        return Qt::AlignHCenter;
+//    }
+//    return ret;
+//}
 
-void UnityClientsTableModel::dataUpdated()
-{
-    int rc = clientsMap.count();
-    int cc = 4;
-    emit dataChanged(index(0, 0), index(rc-1, cc-1));
-    //QModelIndex topLeft = createIndex(0,0);
-    //emit a signal to make the view reread identified data
-    //emit dataChanged(topLeft, topLeft);
-    emit layoutChanged();
-}
+//void UnityClientsTableModel::dataUpdated()
+//{
+//    int rc = clientsMap.count();
+//    int cc = 4;
+//    emit dataChanged(index(0, 0), index(rc-1, cc-1));
+//    //QModelIndex topLeft = createIndex(0,0);
+//    //emit a signal to make the view reread identified data
+//    //emit dataChanged(topLeft, topLeft);
+
+//}
+
+
