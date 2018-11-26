@@ -33,6 +33,25 @@ Com::Com(QObject *parent) : QSerialPort(parent),
             this, SLOT(handleDemoModePeriod()));
 
     resetDemoModeTimer();
+
+    //readyReadStandardError()
+    //void	readyReadStandardOutput()
+
+    connect(&fwProcess, &QProcess::readyReadStandardOutput, [=](){
+        emit msg(QString(fwProcess.readAllStandardOutput()));
+    });
+
+    connect(&fwProcess, &QProcess::readyReadStandardError, [=](){
+        emit msg(QString(fwProcess.readAllStandardError()));
+    });
+    connect(&fwProcess,  static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+            [=](int exitCode, QProcess::ExitStatus exitStatus){
+        emit msg("finished");
+        open();
+        sendCmd("U 23130\r\n");
+        ispState = waitUnlockOkIspState;
+
+    });
 }
 
 bool Com::open()
@@ -127,17 +146,33 @@ void Com::processStr(QString str)
             break;
         case waitSynchronizedClkOKIspState:
             if(str == "OK\r\n"){
-                sendCmd("U 23130\r\n");
-                ispState = waitUnlockOkIspState;
+                QStringList args;
+                args << "com(31, 115200)";
+                args << "device(lpc1758,0,0)";
+                args << "erase(DEVICE, noprotectisp)";
+                QString fwP = fwPath.replace('/', '\\');
+                args << QString("hexfile(%1, nochecksums, nofill, protectisp)").arg(fwPath);
+
+                close();
+                fwProcess.start("fm", args);
+                ispState = waitFmProcessEndState;
             }
             break;
+        case waitFmProcessEndState:
+            qDebug() << "waitFmProcessEndState " << qPrintable(str);
+            sendCmd("U 23130\r\n");
+            ispState = waitUnlockOkIspState;
+            break;
+
         case waitUnlockOkIspState:
-            if(str == "0\r\n"){
+            qDebug() << "waitUnlockOkIspState " << qPrintable(str);
+            if(str == "0\r\n"){                
                 sendCmd("G 0 T\r\n");
                 ispState = waitGoOkIspState;
             }
             break;
         case waitGoOkIspState:
+            qDebug() << "waitGoOkIspState " << qPrintable(str);
             if(str == "0\r\n"){
                 ispState = idleIspState;
                 emit msg(QString("user fwm running"));
@@ -317,8 +352,9 @@ void Com::handleDemoModePeriod()
     emit newPosData(0, 0, 0);
 }
 
-void Com::startIsp()
+void Com::startIsp(QString fwp)
 {
+    fwPath = fwp;
     sendCmd("isp\r\n");
     ispState = waitSynchronizedIspState;
 }

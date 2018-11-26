@@ -286,6 +286,27 @@ void Dialog::initComPort()
             }
         }
     }
+
+    connect(ui->pushButtonSelectFwPath, &QPushButton::clicked, [=](){
+        QString fwPath = ui->lineEdit_fwPath->text();
+        QFileInfo fwFi(fwPath);
+
+        if(fwPath.isEmpty()){
+            fwPath = QDir::currentPath();
+        }
+        fwPath = QFileDialog::getOpenFileName(this, tr("Select fw file"),
+                                                        fwFi.absoluteDir().dirName(),
+                                                        tr("Firmware HEX (*.hex)"));
+        if(fwPath.isEmpty() == false){
+            appendLogString(QString("new fw file selected:\"") + fwPath + "\"");
+            settings.setValue("rootPath", fwPath);
+            ui->lineEdit_fwPath->setText(fwPath);
+            ui->lineEdit_fwPath->setToolTip(fwPath);
+        }
+
+        //appendLogString();
+    });
+
 }
 
 void Dialog::initRootPathControl()
@@ -1371,14 +1392,21 @@ void Dialog::on_checkBox_demoEna_clicked(bool checked)
 
 void Dialog::on_pushButton_ComStartIsp_clicked()
 {    
+    QString fwPath = ui->lineEdit_fwPath->text();
+    if(fwPath.isEmpty() == true){
+        appendLogString(QString("no flash hex file selected"));
+        return;
+    }
+
     int ret = QMessageBox::warning(this, QApplication::applicationName(),
                                    tr("Начать прошивку контроллера кроссплаты?\n"
                                       "Внимание! Неудачная прошивка потребует физический доступ к кроссплате для перепрошивки"),
                                    QMessageBox::No | QMessageBox::Yes,
                                    QMessageBox::No);
 
-    if(ret == QMessageBox::Yes){
-        com->startIsp();
+    if(ret == QMessageBox::Yes){        
+        appendLogString(QString("start flash hex file \"")+fwPath+ "\"");
+        com->startIsp(fwPath);
     }
 
 }

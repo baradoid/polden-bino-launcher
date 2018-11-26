@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QSerialPort>
 #include <QTimer>
+#include <QProcess>
 
 class Com : public QSerialPort
 {
@@ -21,6 +22,10 @@ public:
     uint32_t demoCycleCount;
 
     QString firmwareVer;
+
+    QString fwPath;
+
+    QProcess fwProcess;
 
     enum TDemoModeState {
         idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
@@ -42,13 +47,14 @@ public:
         waitSynchronizedIspState,
         waitSynchronizedOkIspState,
         waitSynchronizedClkOKIspState,
+        waitFmProcessEndState,
         waitUnlockOkIspState,
         waitGoOkIspState
     };
     Q_ENUM(TEnterIspState)
 
     TEnterIspState ispState;
-    void startIsp();
+    void startIsp(QString fwPath);
 
 private:            
     int recvdComPacks, bytesRecvd;    
