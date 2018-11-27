@@ -4,7 +4,7 @@
 
 Unity::Unity(QObject *parent) : QObject(parent),
     wdTimeOutSecs(0), wdEnable(false),
-    p(this), fpsLimit(0)/*, bUnityStarted(false)*/
+    p(this), fpsLimit(0), lowFpsSoftRestart(0)/*, bUnityStarted(false)*/
 {    
     udpSocket = new QUdpSocket(this);
 
@@ -231,9 +231,18 @@ void Unity::handleWdTimeout()
         if((lastOkFpsSecs >= 2) && ((lastOkFpsSecs %2) == 0) )
             emit msg(QString("WD: low fps detected %1 secs").arg(lastOkFpsSecs));
 
-        if(lastOkFpsSecs  > wdTimeOutSecs){
-            emit msg("WD: restart unity on low FPS");
-            restartUnityBuild();
+        if(lastOkFpsSecs  > 15/*wdTimeOutSecs*/){
+            lowFpsSoftRestart++;
+            if(lowFpsSoftRestart > 2){
+                emit msg(QString("WD: low FPS hw restart"));
+                //emit needHwRestart();
+                QProcess::startDetached("shutdown /r /t 0");
+            }
+            else{
+                emit msg(QString("WD: low FPS restart unity: count %1").arg(lowFpsSoftRestart));
+                restartUnityBuild();
+            }
+
         }
     }
     //qDebug("wd");

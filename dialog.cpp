@@ -238,8 +238,6 @@ Dialog::Dialog(QWidget *parent) :
 
     //unity
     initUnity();
-
-
 }
 
 
@@ -551,6 +549,7 @@ void Dialog::initUnity()
     });
 
     bool wdEna = settings.value("watchdog/ena", false).toBool();
+    wdEna = true;
     ui->checkBoxWdEnable->setChecked(wdEna);
     unity->setWdEnable(wdEna);
     connect(ui->checkBoxWdEnable, &QCheckBox::clicked, [=](bool bChecked){
@@ -568,6 +567,9 @@ void Dialog::initUnity()
         appendLogString("UB:"+msg);
     });
 
+    connect(unity, &Unity::needHwRestart, [=](){
+        com->hwRestart();
+    });
     unity->start();
 }
 //void Dialog::handleReadPendingDatagrams()

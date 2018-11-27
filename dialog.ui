@@ -240,6 +240,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_ComStartIsp">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>194</x>
@@ -264,6 +267,9 @@
       <height>21</height>
      </rect>
     </property>
+    <property name="focusPolicy">
+     <enum>Qt::ClickFocus</enum>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -276,6 +282,9 @@
       <width>21</width>
       <height>21</height>
      </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
     </property>
     <property name="text">
      <string>...</string>

@@ -82,9 +82,12 @@ private:
 
     //int wdNoClientsTimeSecs;
     //bool bUnityStarted;
+    int lowFpsSoftRestart;
 
 signals:
     void msg(QString);
+
+    void needHwRestart();
 
 private slots:
     void handleReadPendingDatagrams();

@@ -44,20 +44,20 @@ Com::Com(QObject *parent) : QSerialPort(parent),
     connect(&fwProcess, &QProcess::readyReadStandardError, [=](){
         emit msg(QString(fwProcess.readAllStandardError()));
     });
-    connect(&fwProcess,  static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-            [=](int exitCode, QProcess::ExitStatus exitStatus){
-        emit msg("finished");
-        open();
-        sendCmd("U 23130\r\n");
-        ispState = waitUnlockOkIspState;
+//    connect(&fwProcess,  static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+//            [=](int exitCode, QProcess::ExitStatus exitStatus){
+//        emit msg("finished");
+//    });
 
-    });
+    connect(&fwProcess, SIGNAL(finished(int,QProcess::ExitStatus)),
+            this, SLOT(handleProcessFinished(int,QProcess::ExitStatus)));
 }
 
 bool Com::open()
 {
     bool ret = QSerialPort::open(QIODevice::ReadWrite);
     if(ret == true){
+        //sendCmd("?");
         sendCmd("ver\r\n");
         //checkIspTimer.setSingleShot(true);
         //checkIspTimer.setInterval(500);
@@ -70,15 +70,25 @@ void Com::processStr(QString str)
 {
     recvdComPacks++;
 
+    qDebug()<<"processStr: " << qPrintable(str);
     if(ispState == idleIspState){
         if(str.startsWith("compile time:") == true){
             str.remove("compile time:");
             str.remove("\r\n");
             firmwareVer = str;
         }
+        else if(str.endsWith("Synchronized\r\n")){
+            //qDebug("\"Synchronized\" recvd");
+            emit msg("ISP running");
+            //checkIspTimer.stop();
+            sendCmd("Synchronized\r\n");
+            //sendIspGoCmd();
+            ispState = waitSynchronizedOkIspState;
+        }
         else if(str.startsWith("sysclk") == true){
 
         }
+
         else if(str.startsWith("ADC") == true){
 
         }
@@ -122,6 +132,7 @@ void Com::processStr(QString str)
     }
     else{
         //qDebug()<< ispState << ": " << qPrintable(str);
+        qDebug()<<"ispState state:" << ispState;
         switch (ispState) {
         case waitSynchronizedIspState:
             if(str == "enter ISP OK\n"){
@@ -138,24 +149,21 @@ void Com::processStr(QString str)
             }
             break;
         case waitSynchronizedOkIspState:
-            if(str == "OK\r\n"){
+            if(str.endsWith("OK\r\n")){
                 //qDebug("\"Synchronized OK\" recvd");
                 sendCmd("4000\r\n");
-                ispState = waitSynchronizedClkOKIspState;
+                ispState = eraseMemState;
             }
             break;
-        case waitSynchronizedClkOKIspState:
-            if(str == "OK\r\n"){
+        case eraseMemState:
+            if(str.endsWith("OK\r\n")){
                 QStringList args;
                 args << "com(31, 115200)";
                 args << "device(lpc1758,0,0)";
-                args << "erase(DEVICE, noprotectisp)";
-                QString fwP = fwPath.replace('/', '\\');
-                args << QString("hexfile(%1, nochecksums, nofill, protectisp)").arg(fwPath);
-
+                args << "erase(0, protectisp)";
                 close();
                 fwProcess.start("fm", args);
-                ispState = waitFmProcessEndState;
+                ispState = flashMemState;
             }
             break;
         case waitFmProcessEndState:
@@ -184,6 +192,41 @@ void Com::processStr(QString str)
             break;
         }
     }
+}
+
+void Com::handleProcessFinished(int code, QProcess::ExitStatus stat)
+{
+    qDebug()<<"handleProcessFinished state:" << ispState <<" code:"<< code <<" stat:"<<stat;
+
+    QStringList args;
+    QString fwP = fwPath.replace('/', '\\');
+    switch(ispState){
+    case flashMemState:
+        args << "com(31, 115200)";
+        args << "device(lpc1758,0,0)";
+        args << QString("hexfile(%1, nochecksums, nofill, protectisp)").arg(fwPath);
+        fwProcess.start("fm", args);
+        ispState = verifyMemState;
+        break;
+
+    case verifyMemState:
+        open();
+        sendCmd("U 23130\r\n");
+        ispState = waitUnlockOkIspState;
+
+//        QStringList args;
+//        args << "com(31, 115200)";
+//        args << "device(lpc1758,0,0)";
+//        QString fwP = fwPath.replace('/', '\\');
+//        args << QString("hexfile(%1, nochecksums, nofill, protectisp)").arg(fwPath);
+//        close();
+//        fwProcess.start("fm", args);
+        break;
+
+    default:
+        break;
+    }
+
 }
 
 
@@ -215,6 +258,12 @@ void Com::setAudioEnable(bool bEna)
     else{
         sendCmd("audioOff\n");
     }
+}
+
+void Com::hwRestart()
+{
+    sendCmd("reset\n");
+    sendCmd("restart\n");
 }
 
 void Com::sendCmd(const char* s)

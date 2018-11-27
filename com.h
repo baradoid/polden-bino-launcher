@@ -42,11 +42,15 @@ public:
     void stopDemo();
     void enableDemo(bool);
 
+    void hwRestart();
+
     enum TEnterIspState{
         idleIspState,
         waitSynchronizedIspState,
         waitSynchronizedOkIspState,
-        waitSynchronizedClkOKIspState,
+        eraseMemState,
+        flashMemState,
+        verifyMemState,
         waitFmProcessEndState,
         waitUnlockOkIspState,
         waitGoOkIspState
@@ -54,7 +58,17 @@ public:
     Q_ENUM(TEnterIspState)
 
     TEnterIspState ispState;
+
+//    enum TFmState{
+//        idleFmState,
+//        idleFwState,
+//        idleFwState
+//    };
+//    Q_ENUM(TFmState)
+
     void startIsp(QString fwPath);
+
+
 
 private:            
     int recvdComPacks, bytesRecvd;    
@@ -75,5 +89,6 @@ private slots:
     void handleSerialReadyRead();    
     void handleDemoModePeriod();
     void handleCheckIspRunning();
+    void handleProcessFinished(int,QProcess::ExitStatus);
 
 };
