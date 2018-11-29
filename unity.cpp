@@ -2,6 +2,8 @@
 #include <QFileInfo>
 #include "unity.h"
 
+#include <windows.h>
+
 Unity::Unity(QObject *parent) : QObject(parent),
     wdTimeOutSecs(0), wdEnable(false),
     p(this), fpsLimit(0), lowFpsSoftRestart(0)/*, bUnityStarted(false)*/
@@ -30,7 +32,6 @@ void Unity::start()
         emit msg("udp socket on port 8050 bind FAIL");
     }
     hbTimer.start();
-
 }
 
 
@@ -57,8 +58,9 @@ void Unity::handleReadPendingDatagrams()
                 clientsMap[sAddrStr].bHbaRecvd = true;
                 clientsMap[sAddrStr].resolution = "n/a";
                 clientsMap[sAddrStr].fps = -1;
-                //clientsTableModel.rowCountUpdated();
+                //clientsTableModel.rowCountUpdated();                
             }
+            lastOkFpsTime.restart();
         }
         else if(dData.startsWith("hba") == true){
             clientsMap[sAddrStr].bHbaRecvd = true;
@@ -77,9 +79,6 @@ void Unity::handleReadPendingDatagrams()
                     lastOkFpsTime.restart();
                 else{
                 }
-
-
-
 
                 //ui->tableWidgetClients->item(r, 2)->setText(QString::number(fps,'f', 1));                
                 //ui->tableWidgetClients->item(r, 3)->setText(strL[2]);
@@ -180,7 +179,8 @@ void Unity::restartUnityBuild()
 
     p.kill();
     //qDebug() << unityFileInfo.fileName().toLatin1();
-    p.start("taskkill /IM " + unityFileInfo.fileName());
+    //p.start("taskkill /IM " + unityFileInfo.fileName());
+    QProcess::execute("taskkill /IM " + unityFileInfo.fileName());
     if(p.waitForFinished()){
         emit msg("kill \"" + unityFileInfo.fileName() + "\" ... OK");
     }
@@ -224,7 +224,7 @@ void Unity::handleWdTimeout()
 
     }
     else{
-        wdNoClientsTime.start();
+        wdNoClientsTime.restart();
         int lastOkFpsSecs = lastOkFpsTime.elapsed()/1000;
         //qDebug() << "lastOkFpsTime " << lastOkFpsSecs ;
 
@@ -244,6 +244,19 @@ void Unity::handleWdTimeout()
             }
 
         }
+
+        QFileInfo fi(p.program());
+        HWND wfp, hwndPar;
+        wfp = FindWindow(NULL, (const wchar_t*)fi.baseName().utf16());
+        //hwndPar = GetParent(wfp);
+        hwndPar = GetWindow(wfp, GW_OWNER);
+    //    qInfo("%x %x", wfp, hwndPar);
+
+        uint32_t style;
+        style = GetWindowLong(wfp, GWL_STYLE);
+        //qDebug() << qPrintable(fi.baseName()) << wfp;
+        emit newWindowState(style);
+
     }
     //qDebug("wd");
 

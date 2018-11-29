@@ -105,6 +105,8 @@ private:
 
     void sendPosData();
 
+    void updateWindowState(uint32_t);
+
 
     QTimer *writeCbParamsTimer;
     uint8_t cbWriteParamsCount;

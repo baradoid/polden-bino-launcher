@@ -8,7 +8,7 @@ Com::Com(QObject *parent) : QSerialPort(parent),
     comPacketsRcvd(0), comErrorPacketsRcvd(0),
     demoModePeriod(this), demoModeState(idle),
     checkIspTimer(this),ispState(idleIspState),
-    demoCycleCount(0)
+    demoCycleCount(0), pingTimer(this)
 {
     setBaudRate(115200);
     connect(this, SIGNAL(readyRead()),
@@ -37,6 +37,14 @@ Com::Com(QObject *parent) : QSerialPort(parent),
     //readyReadStandardError()
     //void	readyReadStandardOutput()
 
+    pingTimer.setInterval(2*1000);
+    pingTimer.setSingleShot(false);
+    connect(&pingTimer, &QTimer::timeout, [=](){
+        sendCmd("up?\r\n");
+    });
+
+
+
     connect(&fwProcess, &QProcess::readyReadStandardOutput, [=](){
         emit msg(QString(fwProcess.readAllStandardOutput()));
     });
@@ -62,6 +70,7 @@ bool Com::open()
         //checkIspTimer.setSingleShot(true);
         //checkIspTimer.setInterval(500);
         //checkIspTimer.start();
+        pingTimer.start();
     }
     return ret;
 }
@@ -91,6 +100,24 @@ void Com::processStr(QString str)
 
         else if(str.startsWith("ADC") == true){
 
+        }
+        else if(str.startsWith("up:") == true){
+            str.remove("up:");
+            str.remove("\r\n");
+            bool bOk = false;
+            int upTime = str.toInt(&bOk);
+            if(bOk == true){
+                uint64_t s = upTime;
+                int ss = s%60;
+                int m = (s/60)%60;
+                int h = (s/3600)%24;
+                int d = (s/(3600*24));
+
+                QString tStr;
+                tStr.sprintf("%02d:%02d:%02d:%02d", d,h,m,ss);
+                //ui->lineEditUptime->setText(tStr);
+                emit updateUptime(tStr);
+            }
         }
         else{
             if(str.length() != 17){

@@ -89,6 +89,8 @@ signals:
 
     void needHwRestart();
 
+    void newWindowState(uint32_t);
+
 private slots:
     void handleReadPendingDatagrams();
     void handleHbTimerOut();

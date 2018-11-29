@@ -34,7 +34,7 @@ public:
     Q_ENUM(TDemoModeState)
 
     int demoModeSteps;
-    QTimer demoModePeriod;
+    QTimer demoModePeriod, pingTimer;
     TDemoModeState demoModeState;
 
     void setZero();
@@ -84,6 +84,7 @@ private:
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
     void msg(QString);
+    void updateUptime(QString&);
 
 private slots:
     void handleSerialReadyRead();    

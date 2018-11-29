@@ -32,6 +32,7 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);    
 
+
     startTime.start();
     updateUptime();
     QString compileDateTime = QString(__DATE__) + " " + QString(__TIME__);
@@ -46,6 +47,8 @@ Dialog::Dialog(QWidget *parent) :
 //    if(logDirPath.endsWith(hostName) == false){
 //        logDirPath+= "_" + hostName;
 //    }
+
+    on_pushButtonFindWnd_clicked();
 
     //root dir
     QString rootPath = settings.value("rootPath").toString();
@@ -305,6 +308,11 @@ void Dialog::initComPort()
         //appendLogString();
     });
 
+
+    //void updateUptime(QString&);
+    connect(com, QOverload<QString&>::of(&Com::updateUptime), [=](QString& comUptime){
+        ui->lineEdit_ComUptime->setText(comUptime);
+    });
 }
 
 void Dialog::initRootPathControl()
@@ -570,7 +578,24 @@ void Dialog::initUnity()
     connect(unity, &Unity::needHwRestart, [=](){
         com->hwRestart();
     });
+
+
+    bool startUnityOnStart = settings.value("watchdog/startUnityOnStart", false).toBool();
+    if(settings.contains("watchdog/startUnityOnStart") == true){
+        appendLogString(QString("WD:restore startUnityOnStart: ")+QString(startUnityOnStart?"on":"off"));
+    }
+    ui->checkBox_startUnityOnStart->setChecked(startUnityOnStart);
+    connect(ui->checkBox_startUnityOnStart, &QCheckBox::clicked, [=](bool bChecked){
+        settings.setValue("watchdog/startUnityOnStart", bChecked);
+        appendLogString(QString("startUnityOnStart %1").arg(bChecked? "on" : "off"));
+    });
+
+    connect(unity, &Unity::newWindowState, [=](uint32_t style){
+        updateWindowState(style);
+    });
     unity->start();
+    if(startUnityOnStart == true)
+        unity->restartUnityBuild();
 }
 //void Dialog::handleReadPendingDatagrams()
 //{
@@ -1010,7 +1035,7 @@ void Dialog::handleUpdateUi()
     leEnc2->setText(enc2Str);
     ui->lineEditRange->setText(distStr);
 
-    on_pushButtonFindWnd_clicked();
+    //on_pushButtonFindWnd_clicked();
 
     QString state = QVariant::fromValue(com->demoModeState).value<QString>();
     ui->lineEdit_ComDemoState->setText(state);
@@ -1169,6 +1194,27 @@ void Dialog::handleWriteCBParamsTimeout()
             //writeCbParamsTimer->stop();
         }
     }
+}
+
+void Dialog::updateWindowState(uint32_t style)
+{
+    ui->checkBox_WS_MINIMIZE->setEnabled(true);
+    ui->checkBox_WS_CAPTION->setEnabled(true);
+    ui->checkBox_WS_MAXIMIZE->setEnabled(true);
+    ui->checkBox_WS_POPUP->setEnabled(true);
+    ui->checkBox_WS_DLGFRAME->setEnabled(true);
+    ui->checkBox_WS_BORDER->setEnabled(true);
+    //ui->checkBox_BuildOnTop->setEnabled(true);
+
+    ui->checkBox_WS_MINIMIZE->setChecked((style&WS_MINIMIZE)!=0);
+    ui->checkBox_WS_CAPTION->setChecked((style&WS_CAPTION)!=0);
+    ui->checkBox_WS_MAXIMIZE->setChecked((style&WS_MAXIMIZE)!=0);
+    ui->checkBox_WS_POPUP->setChecked((style&WS_POPUP)!=0);
+    ui->checkBox_WS_DLGFRAME->setChecked((style&WS_DLGFRAME)!=0);
+    ui->checkBox_WS_BORDER->setChecked((style&WS_BORDER)!=0);
+
+    //ui->checkBox_BuildOnTop->setChecked(wfp == GetForegroundWindow());
+
 }
 
 void Dialog::on_pushButtonFindWnd_clicked()
