@@ -121,6 +121,10 @@ Dialog::Dialog(QWidget *parent) :
 
     ui->lineEditRange->setText("n/a");
     ui->lineEditRange_2->setText("n/a");
+    connect(ui->checkBoxRangeAlwaysOn, &QCheckBox::clicked, [=](bool checked){
+        sendPosData();
+
+    });
 
     //ui->lineEditDebugR->setValidator(new QIntValidator(0,50, this));
     //ui->lineEditDebugX->setValidator(new QIntValidator(0,8191, this));
@@ -1014,12 +1018,6 @@ void Dialog::sendPosData()
 //    }
 
     unity->sendCbData(cbdata);
-}
-
-void Dialog::on_checkBoxRangeAlwaysOn_clicked(bool checked)
-{
-    //settings.setValue("rangeAlwaysOn", checked);
-    sendPosData();    
 }
 
 

@@ -193,13 +193,18 @@ void Unity::restartUnityBuild()
         return;
     }
     QString unityPathQuoted = "\"" + unityPath + "\"";
-    p.start(unityPathQuoted);
-    //if()){
-        emit msg(QString("start \"") + unityPath + "\" ... OK");
-    //}
-    //else{
-    //    emit msg(QString("start \"") + unityPath + "\" ... FAIL");
-    //}
+    if(QFileInfo(unityPath).exists() == true){
+        p.start(unityPathQuoted);
+        //if()){
+            emit msg(QString("start \"") + unityPath + "\" ... OK");
+        //}
+        //else{
+        //    emit msg(QString("start \"") + unityPath + "\" ... FAIL");
+        //}
+    }
+    else{
+        emit msg(QString("start \"") + unityPath + "\" ... FAIL");
+    }
 }
 
 

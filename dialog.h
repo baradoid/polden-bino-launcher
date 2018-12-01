@@ -140,8 +140,7 @@ private slots:
     void on_pushButton_clicked();
 
     void handleLogUpdateTimeout();
-    void on_pushButtonEncSetZero_clicked();
-    void on_checkBoxRangeAlwaysOn_clicked(bool checked);    
+    void on_pushButtonEncSetZero_clicked();  
     void handleUpdateUi();
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
