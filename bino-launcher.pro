@@ -28,17 +28,23 @@ SOURCES += \
     web.cpp \
     utils.cpp \
     com.cpp \
-    unity.cpp
+    unity.cpp \
+    temp.c
 
 HEADERS += \
         dialog.h \
     web.h \
     utils.h \
     com.h \
-    unity.h
+    unity.h \
+    temp.h
 
 FORMS += \
         dialog.ui
 
 RESOURCES += \
     resources.qrc
+
+LIBS += -lole32 -lwbemuuid -lOleAut32 -lWbemuuid
+# -lws2_32
+

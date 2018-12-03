@@ -244,7 +244,7 @@ Dialog::Dialog(QWidget *parent) :
     web->start();
 
     //unity
-    initUnity();
+    initUnity();       
 }
 
 
