@@ -1,5 +1,6 @@
 #pragma once
 #include <QString>
+#include <windows.h>
 
 QString todayLogName();
 QString todayLogPath();
@@ -13,20 +14,6 @@ typedef struct{
     QString logsDir;
 } TDirStruct;
 
+bool securityStart();
 
-#include <windows.h>
-//#define _WIN32_DCOM
-//#include <iostream>
-//using namespace std;
-//#include <comdef.h>
-//#include <Wbemidl.h>
-
-//#ifdef 1
-//    #define _WIN32_DCOM
-//    #include <wbemidl.h>
-//    #include <comdef.h>
-//    #include <conio.h>
-//    #pragma comment(lib, "wbemuuid.lib")
-//#endif
-
-HRESULT GetCpuTemperature(LPLONG pTemperature);
+bool GetTemperature(float* pCpuTemp, float* pGpuTemp);

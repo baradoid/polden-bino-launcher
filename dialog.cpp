@@ -164,7 +164,13 @@ Dialog::Dialog(QWidget *parent) :
 
     QTimer *uiUpdateTimer = new QTimer(this);
     connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUpdateUi()));
-    uiUpdateTimer->setInterval(50);
+    uiUpdateTimer->setInterval(250);
+    uiUpdateTimer->start();
+
+    uiUpdateTimer = new QTimer(this);
+    connect(uiUpdateTimer, SIGNAL(timeout()),
+            this, SLOT(handleUpdateUiHardwareParams()));
+    uiUpdateTimer->setInterval(2000);
     uiUpdateTimer->start();
 
 
@@ -244,7 +250,19 @@ Dialog::Dialog(QWidget *parent) :
     web->start();
 
     //unity
-    initUnity();       
+    initUnity();
+
+    QTime startTime;
+    startTime.start();
+    float temp;
+//    GetCpuTemperature(&temp);
+//    qDebug("temp=%f\n", temp);
+//    GetCpuTemperature(&temp);
+//    qDebug("temp=%f\n", temp);
+//    GetCpuTemperature(&temp);
+//    qDebug("temp=%f\n", temp);
+
+    securityStart();
 }
 
 
@@ -1024,6 +1042,9 @@ void Dialog::sendPosData()
 
 void Dialog::handleUpdateUi()
 {
+    QTime startTime;
+    startTime.start();
+
     ui->lineEditComPacketsRcv->setText(QString::number(com->comPacketsRcvd));
     ui->lineEditComPacketsRcvError->setText(QString::number(com->comErrorPacketsRcvd));
     QString enc1Str = com->enc1Val == -1 ? "n/a": QString::number(com->enc1Val);
@@ -1137,7 +1158,26 @@ void Dialog::handleUpdateUi()
         ui->lineEdit_wdNoClientsTimer->hide();
     }
 
+    //qDebug("time=%d", startTime.elapsed());
 }
+
+void Dialog::handleUpdateUiHardwareParams()
+{
+    QTime startTime;
+    startTime.start();
+    float cpuTemp, gpuTemp;
+    //GetGpuTemperature(&gpuTemp);
+    //qDebug("temp=%f, temp=%f, time=%d", cpuTemp, gpuTemp, startTime.elapsed());
+    if(GetTemperature(&cpuTemp, &gpuTemp) == true){
+        ui->lineEditCpuTemp->setText(QString::number(cpuTemp) + " °C");
+        ui->lineEditGpuTemp->setText(QString::number(gpuTemp) + " °C");
+    }
+    else{
+        ui->lineEditCpuTemp->setText("n/a");
+        ui->lineEditGpuTemp->setText("n/a");
+    }
+}
+
 
 void Dialog::initAppAutoStartCheckBox()
 {

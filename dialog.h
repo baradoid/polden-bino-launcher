@@ -142,6 +142,7 @@ private slots:
     void handleLogUpdateTimeout();
     void on_pushButtonEncSetZero_clicked();  
     void handleUpdateUi();
+    void handleUpdateUiHardwareParams();
     void handleWriteCBParamsTimeout();    
     void on_pushButtonFindWnd_clicked();
 

@@ -58,159 +58,135 @@ void unZip(QString zip_filename , QString outPath)
 //        });
 }
 
-//#define _WIN32_DCOM
-#include <guiddef.h>
 #include <wbemprov.h>
-//#include <iostream>
-//using namespace std;
-//#include <comdef.h>
-
-#include <Wbemidl.h>
-
-
-//#pragma comment(lib, "wbemuuid.lib")
-
-//#define EXTERN_C extern "C" GUID CLSID_WbemAdministrativeLocator;
-//DEFINE_GUID(CLSID_WbemAdministrativeLocator, 0xcb8555cc, 0x9128, 0x11d1, 0xad,0x9b, 0x00,0xc0,0x4f,0xd8,0xfd,0xff);
-
-
-HRESULT GetCpuTemperature(uint32_t* pTemperature)
+IWbemServices *pServices;
+bool securityStart()
 {
-        if (pTemperature == NULL)
-                return E_INVALIDARG;
-
-        *pTemperature = -1;
-        HRESULT ci = CoInitialize(NULL);
-        HRESULT hr = CoInitializeSecurity(NULL,
-                                          -1,
-                                          NULL,
-                                          NULL,
-                                          RPC_C_AUTHN_LEVEL_DEFAULT,
-                                          RPC_C_IMP_LEVEL_IMPERSONATE,
-                                          NULL,
-                                          EOAC_NONE,
-                                          NULL);
-        if (FAILED(hr))
-        {
+    HRESULT ci = CoInitialize(NULL);
+    HRESULT hr = CoInitializeSecurity(NULL,
+                                      -1,
+                                      NULL,
+                                      NULL,
+                                      RPC_C_AUTHN_LEVEL_DEFAULT,
+                                      RPC_C_IMP_LEVEL_IMPERSONATE,
+                                      NULL,
+                                      EOAC_NONE,
+                                      NULL);
+    if (FAILED(hr))
+    {
 //            std::cout << "Failed to initialize security. Error code = 0x"
 //                << hex << hres << endl;
-            CoUninitialize();
-            return 1;                    // Program has failed.
-        }
-        if (SUCCEEDED(hr))
-        {
-                IWbemLocator *pLocator;
-                hr = CoCreateInstance(CLSID_WbemLocator /*CLSID_WbemAdministrativeLocator*/,
-                                      NULL,
-                                      CLSCTX_INPROC_SERVER,
-                                      IID_IWbemLocator,
-                                      (LPVOID*)&pLocator);
-                if (FAILED(hr))
-                {
-//                    cout << "Failed to create IWbemLocator object."
-//                        << " Err code = 0x"
-//                        << hex << hres << endl;
-                    CoUninitialize();
-                    return 1;                 // Program has failed.
-                }
-                if (SUCCEEDED(hr))
-                {
-                        IWbemServices *pServices;
-                        BSTR ns = SysAllocString(L"root\\OpenHardwareMonitor");
-                        hr = pLocator->ConnectServer(ns,
-                                                     NULL,
-                                                     NULL,
-                                                     NULL,
-                                                     0,
-                                                     NULL,
-                                                     NULL,
-                                                     &pServices);
-                        if (FAILED(hr))
-                        {
-//                            cout << "Failed to create IWbemLocator object."
-//                                << " Err code = 0x"
-//                                << hex << hres << endl;
-                            CoUninitialize();
-                            return 1;                 // Program has failed.
-                        }
+        CoUninitialize();
+        return false;                    // Program has failed.
+    }
+    IWbemLocator *pLocator;
+    hr = CoCreateInstance(CLSID_WbemLocator,
+                          NULL,
+                          CLSCTX_INPROC_SERVER,
+                          IID_IWbemLocator,
+                          (LPVOID*)&pLocator);
+    if (FAILED(hr))
+    {
+        //                    cout << "Failed to create IWbemLocator object."
+        //                        << " Err code = 0x"
+        //                        << hex << hres << endl;
+        CoUninitialize();
+        return false;                 // Program has failed.
+    }
 
-                        pLocator->Release();
-                        SysFreeString(ns);
-                        if (SUCCEEDED(hr))
-                        {
-                            //wmic /namespace:\\Root\OpenHardwareMonitor path sensor where "identifier='/intelcpu/0/temperature/0'" get value | findstr "[0-9]"
-                                //BSTR query = SysAllocString(L"SELECT * FROM sensor where \"identifier=\'//intelcpu//0//temperature//0\'\"");
+    BSTR ns = SysAllocString(L"root\\OpenHardwareMonitor");
+    hr = pLocator->ConnectServer(ns,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 NULL,
+                                 &pServices);
+    if (FAILED(hr))
+    {
+        //                            cout << "Failed to create IWbemLocator object."
+        //                                << " Err code = 0x"
+        //                                << hex << hres << endl;
+        CoUninitialize();
+        return false;                 // Program has failed.
+    }
 
-                            BSTR query = SysAllocString(L"SELECT * FROM sensor WHERE Name LIKE \"GPU Core\" AND SensorType LIKE \"Temperature\" ");
-                                BSTR wql = SysAllocString(L"WQL");
-                                IEnumWbemClassObject *pEnum;
-                                hr = pServices->ExecQuery(wql, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
-                                SysFreeString(wql);
-                                SysFreeString(query);
-                                pServices->Release();
-                                if (SUCCEEDED(hr))
-                                {
-                                        IWbemClassObject *pObject;
-                                        ULONG returned;
-                                        hr = pEnum->Next(WBEM_INFINITE, 1, &pObject, &returned);
-                                        pEnum->Release();
-                                        if (SUCCEEDED(hr))
-                                        {
-                                                BSTR temp = SysAllocString(L"Value");
-                                                VARIANT v;
-                                                VariantInit(&v);
-                                                hr = pObject->Get(temp, 0, &v, NULL, NULL);
-//                                                SAFEARRAY* sfArray;
-//                                                IWbemClassObject *pclsObj;
-//                                                LONG lstart, lend;
-//                                                VARIANT vtProp;
-//                                                hr = pObject->GetNames(0,WBEM_FLAG_ALWAYS,0,&sfArray);
-//                                                pObject->Release();
-//                                                hr = SafeArrayGetLBound( sfArray, 1, &lstart );
-//                                                if(FAILED(hr)) return hr;
-//                                                hr = SafeArrayGetUBound( sfArray, 1, &lend );
-//                                                if(FAILED(hr)) return hr;
-//                                                BSTR* pbstr;
-//                                                hr = SafeArrayAccessData(sfArray,(void HUGEP**)&pbstr);
-//                                                int nIdx =0;
-//                                                if(SUCCEEDED(hr))
-//                                                {
-//                                                    CIMTYPE pType;
-//                                                    for(nIdx=lstart; nIdx < lend; nIdx++)
-//                                                    {
+    pLocator->Release();
+    SysFreeString(ns);
 
-//                                                        hr = pclsObj->Get(pbstr[nIdx], 0, &vtProp, &pType, 0);
-//                                                        if (vtProp.vt== VT_NULL)
-//                                                        {
-//                                                            continue;
-//                                                        }
-//                                                        if (pType == CIM_STRING && pType != CIM_EMPTY && pType!= CIM_ILLEGAL  )
-//                                                        {
-//                                                            qDebug() << " OS Name : "<< nIdx << vtProp.bstrVal <<endl;
-//                                                        }
-
-//                                                        VariantClear(&vtProp);
-
-//                                                    }
-//                                                    hr = SafeArrayUnaccessData(sfArray);
-//                                                    if(FAILED(hr)) return hr;
-//                                                }
-
-                                                SysFreeString(temp);
-                                                if (SUCCEEDED(hr))
-                                                {
-                                                        *pTemperature = V_I4(&v);
-                                                }
-                                                VariantClear(&v);
-                                        }
-                                }
-                        }
-                        if (ci == S_OK)
-                        {
-                                CoUninitialize();
-                        }
-                }
-        }
-        return hr;
+    return true;
 }
 
+bool GetTemperature(float* pCpuTemp, float* pGpuTemp)
+{
+//    QTime startTime;
+//    startTime.start();
+//    qDebug("getTemp st");
+
+    bool ret = false;
+    *pCpuTemp = *pGpuTemp = -1;
+    HRESULT hr, ci;
+
+    //QString qstrQuery = QString("SELECT Value FROM sensor WHERE Name LIKE \"") + key + QString("\" AND SensorType LIKE \"Temperature\" ");
+    QString qstrQuery = QString("SELECT * FROM sensor WHERE (Name LIKE \"CPU Core #1\" OR Name LIKE \"GPU Core\") AND SensorType LIKE \"Temperature\" ");
+    BSTR query = SysAllocString(qstrQuery.toStdWString().c_str());
+    BSTR wql = SysAllocString(L"WQL");
+    IEnumWbemClassObject *pEnum;
+    hr = pServices->ExecQuery(wql, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
+    SysFreeString(wql);
+    SysFreeString(query);
+    //pServices->Release();
+    //qDebug("getTemp 3 time=%d", startTime.elapsed());
+    while(hr == WBEM_S_NO_ERROR )
+    {
+        IWbemClassObject *pObject;
+        ULONG returned;
+        hr = pEnum->Next(WBEM_INFINITE, 1, &pObject, &returned);
+        //qDebug("getTemp 4 time=%d", startTime.elapsed());
+        if (hr == WBEM_S_NO_ERROR )
+        {
+            VARIANT v;
+            VariantInit(&v);
+            BSTR partName = SysAllocString(L"Name");
+            hr = pObject->Get(partName, 0, &v, NULL, NULL);
+            SysFreeString(partName);
+            QString ss;
+            if (SUCCEEDED(hr)){
+                ss = QString::fromWCharArray((wchar_t*)v.bstrVal);
+                //qDebug() <<"name" << qPrintable(ss);
+            }
+            BSTR temp = SysAllocString(L"Value");
+            hr = pObject->Get(temp, 0, &v, NULL, NULL);
+            SysFreeString(temp);
+            if (SUCCEEDED(hr))
+            {
+                if(ss == "CPU Core #1"){
+                    *pCpuTemp = V_R4(&v);
+                    ret = true;
+                }
+                if(ss == "GPU Core"){
+                    *pGpuTemp = V_R4(&v);
+                    ret = true;
+                }
+            }
+            VariantClear(&v);
+        }
+    }
+    pEnum->Release();
+
+    //qDebug("getTemp 5 time=%d", startTime.elapsed());
+    return ret;
+}
+
+
+//HRESULT GetCpuTemperature(float* pTemperature)
+//{
+//    return GetTemperature("CPU Core #1", pTemperature);
+//}
+
+
+//HRESULT GetGpuTemperature(float* pTemperature)
+//{
+//    return GetTemperature("GPU Core", pTemperature);
+//}

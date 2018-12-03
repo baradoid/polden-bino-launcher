@@ -45,6 +45,6 @@ FORMS += \
 RESOURCES += \
     resources.qrc
 
-LIBS += -lole32 -lwbemuuid -lOleAut32 -lWbemuuid
-# -lws2_32
+LIBS += -lole32 -lWbemuuid -lOleAut32
+
 

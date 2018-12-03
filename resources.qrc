@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/res">
         <file>images/folderopenicon.png</file>
+        <file>images/temperature.png</file>
+        <file>images/voltage.png</file>
     </qresource>
 </RCC>
