@@ -560,9 +560,9 @@
    <widget class="QLineEdit" name="lineEditBuildPath">
     <property name="geometry">
      <rect>
-      <x>50</x>
+      <x>40</x>
       <y>70</y>
-      <width>411</width>
+      <width>251</width>
       <height>21</height>
      </rect>
     </property>
@@ -573,7 +573,7 @@
    <widget class="QPushButton" name="pushButtonWdSelectPath">
     <property name="geometry">
      <rect>
-      <x>470</x>
+      <x>300</x>
       <y>70</y>
       <width>31</width>
       <height>21</height>
@@ -739,6 +739,16 @@
     </property>
     <property name="text">
      <string>Запускать при старте</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditBuldStartupParams">
+    <property name="geometry">
+     <rect>
+      <x>352</x>
+      <y>70</y>
+      <width>151</width>
+      <height>20</height>
+     </rect>
     </property>
    </widget>
   </widget>
@@ -1416,7 +1426,7 @@ zero</string>
    <property name="geometry">
     <rect>
      <x>540</x>
-     <y>340</y>
+     <y>330</y>
      <width>251</width>
      <height>91</height>
     </rect>
@@ -1534,7 +1544,7 @@ zero</string>
    <property name="geometry">
     <rect>
      <x>540</x>
-     <y>220</y>
+     <y>210</y>
      <width>251</width>
      <height>116</height>
     </rect>
@@ -1864,6 +1874,13 @@ zero</string>
   <zorder>pushButtonSelectRootPath</zorder>
   <zorder>pushButton_showRootPath</zorder>
   <zorder>groupBox_4</zorder>
+  <zorder>lineEditBuldStartupParams</zorder>
+  <zorder>pushButtonWdSelectPath</zorder>
+  <zorder>lineEditBuildPath</zorder>
+  <zorder>label_14</zorder>
+  <zorder>lineEditBuldStartupParams</zorder>
+  <zorder>pushButtonWdSelectPath</zorder>
+  <zorder>lineEditBuildPath</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>

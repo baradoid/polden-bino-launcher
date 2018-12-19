@@ -541,6 +541,20 @@ void Dialog::initUnity()
         }
     });
 
+    QString unityBuildStartupParams = settings.value("watchdog/unityBuildStartupParams").toString();
+    appendLogString(QString("restore unity startup params:\"")+(unityBuildStartupParams.isEmpty()? "n/a":unityBuildStartupParams)+ "\"");
+    ui->lineEditBuldStartupParams->setText(unityBuildStartupParams);
+    ui->lineEditBuldStartupParams->setToolTip(unityBuildStartupParams);
+    unity->setUnityStartupParams(unityBuildStartupParams);
+    connect(ui->lineEditBuldStartupParams, &QLineEdit::editingFinished, [=](){
+        QString params =  ui->lineEditBuldStartupParams->text();
+        if(params.isEmpty() == false){
+            appendLogString(QString("WD:new unity cmd params:\"")+params+ "\"");
+            settings.setValue("watchdog/unityBuildStartupParams", params);
+            unity->setUnityStartupParams(params);
+        }
+    });
+
     ui->lineEditWdTimeOutSecs->setValidator(new QIntValidator(10,999, this));
     QString wdTo = settings.value("watchdog/timeout", 10).toString();
     appendLogString(QString("WD:restore watchdog time out:\"")+(wdTo.isEmpty()? "n/a":wdTo)+ "\"");

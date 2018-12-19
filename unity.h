@@ -62,6 +62,7 @@ typedef struct{
     void sendCbData(CbDataUdp &cbData);
     void restartUnityBuild();
     void setUnityPath(QString p){unityPath = p;}
+    void setUnityStartupParams(QString p){cmdParams = p;}
 
     void setWdTimeOutSecs(int to){wdTimeOutSecs = to;}
     void setFpsLimit(int fpsLim){fpsLimit = fpsLim;}
@@ -71,6 +72,7 @@ typedef struct{
 private:
     QProcess p;
     QString unityPath;
+    QString cmdParams;
     QUdpSocket *udpSocket;
 
     QTimer wdTimer, hbTimer;

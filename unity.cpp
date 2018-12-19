@@ -193,10 +193,12 @@ void Unity::restartUnityBuild()
         return;
     }
     QString unityPathQuoted = "\"" + unityPath + "\"";
-    if(QFileInfo(unityPath).exists() == true){
-        p.start(unityPathQuoted);
+    if(QFileInfo(unityPath).exists() == true){        
+        QStringList cmdParamsList;
+        cmdParamsList << cmdParams;
+        p.start(unityPathQuoted, cmdParamsList);
         //if()){
-            emit msg(QString("start \"") + unityPath + "\" ... OK");
+            emit msg(QString("start \"") + unityPath  + (cmdParams.isEmpty()? QString(""):(QString(" ")+ cmdParams))+ "\" ... OK");
         //}
         //else{
         //    emit msg(QString("start \"") + unityPath + "\" ... FAIL");
