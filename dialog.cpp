@@ -1078,7 +1078,7 @@ void Dialog::handleUpdateUi()
         demoRemTime = com->demoModePeriod.remainingTime()/100.;
         break;
     default:
-        demoRemTime = com->demoModeSteps/25.;
+        demoRemTime = com->demoModeCurStepInd/(1000/com->demoModePeriod.interval());
         break;
     }
 

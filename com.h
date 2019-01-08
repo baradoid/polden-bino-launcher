@@ -5,6 +5,8 @@
 #include <QTimer>
 #include <QProcess>
 
+#include <QRandomGenerator>
+
 class Com : public QSerialPort
 {
     Q_OBJECT
@@ -21,6 +23,10 @@ public:
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
     uint32_t demoCycleCount;
 
+    //int16_t enc1ValMovingStep, enc2ValMovingStep;
+    int16_t enc1ValMovingOffset, enc2ValMovingOffset;
+    int16_t enc1EvolStart, enc2EvolStart;
+
     QString firmwareVer;
 
     QString fwPath;
@@ -28,12 +34,12 @@ public:
     QProcess fwProcess;
 
     enum TDemoModeState {
-        idle, idleTimeout, walkIn, movingLeft, movingRight, walkOut
+        idle, idleTimeout, walkIn, moving, hold, walkOut
     };
 
     Q_ENUM(TDemoModeState)
 
-    int demoModeSteps;
+    int demoModeSteps, demoModeCurStepInd;
     QTimer demoModePeriod, pingTimer;
     TDemoModeState demoModeState;
 
@@ -75,11 +81,13 @@ private:
     QString recvStr;    
     QTimer checkIspTimer;
 
+    QRandomGenerator randGen;
+
     void processStr(QString str);
     void sendCmd(const char* s);
 
     void sendIspGoCmd();
-    void resetDemoModeTimer();
+    void resetDemoModeTimer();    
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);

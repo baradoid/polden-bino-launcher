@@ -1,6 +1,8 @@
 #include "com.h"
 #include <QThread>
 #include <QDebug>
+#include <QtMath>
+
 
 Com::Com(QObject *parent) : QSerialPort(parent),
     enc1Val(-1), enc2Val(-1), distVal(-1),
@@ -330,7 +332,7 @@ void Com::handleCheckIspRunning()
 void Com::resetDemoModeTimer()
 {
     demoCycleCount = 0;
-    demoModeSteps = 1;
+    demoModeCurStepInd = 1;
     demoModeState = idle;
     demoModePeriod.setSingleShot(false);
     demoModePeriod.setInterval(60*1000);
@@ -340,7 +342,7 @@ void Com::resetDemoModeTimer()
 void Com::startDemo()
 {
     demoModePeriod.setInterval(50);
-    demoModeSteps = 1;
+    demoModeCurStepInd = 1;
     demoModeState = idle;
 }
 
@@ -364,7 +366,9 @@ void Com::enableDemo(bool bEna)
 }
 
 void Com::handleDemoModePeriod()
-{
+{        
+    int intervalsInSecond = 1000/demoModePeriod.interval();
+    qreal sinVal;
     switch(demoModeState){
     case idle:
         if(distVal == -1)
@@ -379,48 +383,73 @@ void Com::handleDemoModePeriod()
         demoCycleCount++;
         break;
     case idleTimeout:
-        demoModeSteps--;
-        if(demoModeSteps <= 0){
-            demoModeSteps = 125;
+        demoModeCurStepInd--;
+        if(demoModeCurStepInd <= 0){
             demoModeState = walkIn;
         }
         break;
-    case walkIn:
+    case walkIn:        
         //emit msg("human interface timeout. Start demo mode. walkIn");
-        distVal --;
         if(distVal <= 5){
-            demoModeState = movingLeft;
-        }
-        break;
-    case movingLeft:
-        //emit msg("human interface timeout. Start demo mode. moveLeft");
-        enc1Val = (enc1Val+enc1Offset-25)&0x1fff;
-        enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
+            demoModeState = moving;
+            //enc1ValMovingStep = randGen.bounded(-50, 50);
+            //enc2ValMovingStep = randGen.bounded(-50, 50);
+            //qDebug("movingStep %d %d", enc1ValMovingStep, enc2ValMovingStep);
 
-        demoModeSteps--;
-        if(demoModeSteps <= 0){
-            demoModeSteps = 125;
-            demoModeState = movingRight;
+            enc1ValMovingOffset = randGen.bounded(-4000, 4000);
+            enc2ValMovingOffset = randGen.bounded(-4000, 4000);
+            enc1EvolStart = enc1Val;
+            enc2EvolStart = enc2Val;
+            demoModeSteps = randGen.bounded(2, 6)*intervalsInSecond;
+            demoModeCurStepInd = demoModeSteps;
+            qDebug("ints:%d movingOffset:%d %d", demoModeSteps/intervalsInSecond, enc1ValMovingOffset, enc2ValMovingOffset);
+        }
+        else{
+            distVal --;
         }
         break;
-    case movingRight:
+    case moving:
+
+        //emit msg("human interface timeout. Start demo mode. moveLeft");
+        demoModeCurStepInd--;
+        sinVal = (qSin(-M_PI_2 + M_PI*(demoModeSteps-demoModeCurStepInd)/(float)demoModeSteps)+1)/2;
+        enc1Val = (enc1EvolStart+enc1Offset+(int)(enc1ValMovingOffset*sinVal))&0x1fff;
+        enc2Val = (enc2EvolStart+enc2Offset+(int)(enc2ValMovingOffset*sinVal))&0x1fff;; //(enc2Val-1)&0x1fff;
+
+        //qDebug("%f %d %d", sinVal, enc1Val, enc2Val);
+
+        if(demoModeCurStepInd <= 0){
+            demoModeCurStepInd = randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
+            demoModeState = hold;
+            qDebug("hold for %d", demoModeCurStepInd/intervalsInSecond);
+        }
+        break;
+    case hold:
         //emit msg("human interface timeout. Start demo mode. moveRight");
 
-        enc1Val = (enc1Val+enc1Offset+25)&0x1fff;
-        enc2Val = enc2Offset; //(enc2Val-1)&0x1fff;
+        //enc1Val = (enc1Val+enc1Offset+enc1ValMovingStep)&0x1fff;
+        //enc2Val = (enc2Val+enc2Offset+enc2ValMovingStep)&0x1fff; //(enc2Val-1)&0x1fff;
 
-        demoModeSteps--;
-        if(demoModeSteps <= 0){
-            demoModeSteps = 125;
-            demoModeState = walkOut;
+        demoModeCurStepInd--;
+        if(demoModeCurStepInd <= 0){
+            bool bEndIter = (bool)randGen.bounded(2);
+            if(bEndIter == true){
+                demoModeState = walkOut;
+                qDebug("walkOut");
+            }
+            else{
+                demoModeState = walkIn;
+            }
         }
         break;
     case walkOut:
         //emit msg("human interface timeout. Start demo mode. walkOut");
         distVal ++;
         if(distVal >= 50){
-            demoModeSteps = 400;
+            demoModeSteps = randGen.bounded(10, 20)*intervalsInSecond;
+            demoModeCurStepInd = demoModeSteps;
             demoModeState = idle;
+            qDebug("idle for %d", demoModeCurStepInd/intervalsInSecond);
         }
         break;
 
