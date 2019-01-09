@@ -171,7 +171,10 @@ Dialog::Dialog(QWidget *parent) :
     connect(uiUpdateTimer, SIGNAL(timeout()),
             this, SLOT(handleUpdateUiHardwareParams()));
     uiUpdateTimer->setInterval(2000);
-    uiUpdateTimer->start();
+    if(securityStart() == true){
+        uiUpdateTimer->start();
+    }
+
 
 
     initAppAutoStartCheckBox();
@@ -262,7 +265,7 @@ Dialog::Dialog(QWidget *parent) :
 //    GetCpuTemperature(&temp);
 //    qDebug("temp=%f\n", temp);
 
-    securityStart();
+
 }
 
 

@@ -402,7 +402,7 @@ void Com::handleDemoModePeriod()
             enc2EvolStart = enc2Val;
             demoModeSteps = random_int(2, 6)*intervalsInSecond; //randGen.bounded(2, 6)*intervalsInSecond;
             demoModeCurStepInd = demoModeSteps;
-            qDebug("ints:%d movingOffset:%d %d", demoModeSteps/intervalsInSecond, enc1ValMovingOffset, enc2ValMovingOffset);
+            qDebug("ints:%d movingOffset:%d %d %d %d", demoModeSteps/intervalsInSecond, enc1ValMovingOffset, enc2ValMovingOffset, enc1Val, enc2Val);
         }
         else{
             distVal --;
@@ -416,7 +416,7 @@ void Com::handleDemoModePeriod()
         enc1Val = (enc1EvolStart+enc1Offset+(int)(enc1ValMovingOffset*sinVal))&0x1fff;
         enc2Val = (enc2EvolStart+enc2Offset+(int)(enc2ValMovingOffset*sinVal))&0x1fff;; //(enc2Val-1)&0x1fff;
 
-        //qDebug("%f %d %d", sinVal, enc1Val, enc2Val);
+        qDebug("%f %d %d", sinVal, enc1Val, enc2Val);
 
         if(demoModeCurStepInd <= 0){
             demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
