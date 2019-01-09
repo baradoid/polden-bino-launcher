@@ -126,54 +126,59 @@ bool GetTemperature(float* pCpuTemp, float* pGpuTemp)
 
     bool ret = false;
     *pCpuTemp = *pGpuTemp = -1;
-    HRESULT hr, ci;
+    try{
+        HRESULT hr, ci;
 
-    //QString qstrQuery = QString("SELECT Value FROM sensor WHERE Name LIKE \"") + key + QString("\" AND SensorType LIKE \"Temperature\" ");
-    QString qstrQuery = QString("SELECT * FROM sensor WHERE (Name LIKE \"CPU Core #1\" OR Name LIKE \"GPU Core\") AND SensorType LIKE \"Temperature\" ");
-    BSTR query = SysAllocString(qstrQuery.toStdWString().c_str());
-    BSTR wql = SysAllocString(L"WQL");
-    IEnumWbemClassObject *pEnum;
-    hr = pServices->ExecQuery(wql, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
-    SysFreeString(wql);
-    SysFreeString(query);
-    //pServices->Release();
-    //qDebug("getTemp 3 time=%d", startTime.elapsed());
-    while(hr == WBEM_S_NO_ERROR )
-    {
-        IWbemClassObject *pObject;
-        ULONG returned;
-        hr = pEnum->Next(WBEM_INFINITE, 1, &pObject, &returned);
-        //qDebug("getTemp 4 time=%d", startTime.elapsed());
-        if (hr == WBEM_S_NO_ERROR )
+        //QString qstrQuery = QString("SELECT Value FROM sensor WHERE Name LIKE \"") + key + QString("\" AND SensorType LIKE \"Temperature\" ");
+        QString qstrQuery = QString("SELECT * FROM sensor WHERE (Name LIKE \"CPU Core #1\" OR Name LIKE \"GPU Core\") AND SensorType LIKE \"Temperature\" ");
+        BSTR query = SysAllocString(qstrQuery.toStdWString().c_str());
+        BSTR wql = SysAllocString(L"WQL");
+        IEnumWbemClassObject *pEnum;
+        hr = pServices->ExecQuery(wql, query, WBEM_FLAG_RETURN_IMMEDIATELY | WBEM_FLAG_FORWARD_ONLY, NULL, &pEnum);
+        SysFreeString(wql);
+        SysFreeString(query);
+        //pServices->Release();
+        //qDebug("getTemp 3 time=%d", startTime.elapsed());
+        while(hr == WBEM_S_NO_ERROR )
         {
-            VARIANT v;
-            VariantInit(&v);
-            BSTR partName = SysAllocString(L"Name");
-            hr = pObject->Get(partName, 0, &v, NULL, NULL);
-            SysFreeString(partName);
-            QString ss;
-            if (SUCCEEDED(hr)){
-                ss = QString::fromWCharArray((wchar_t*)v.bstrVal);
-                //qDebug() <<"name" << qPrintable(ss);
-            }
-            BSTR temp = SysAllocString(L"Value");
-            hr = pObject->Get(temp, 0, &v, NULL, NULL);
-            SysFreeString(temp);
-            if (SUCCEEDED(hr))
+            IWbemClassObject *pObject;
+            ULONG returned;
+            hr = pEnum->Next(WBEM_INFINITE, 1, &pObject, &returned);
+            //qDebug("getTemp 4 time=%d", startTime.elapsed());
+            if (hr == WBEM_S_NO_ERROR )
             {
-                if(ss == "CPU Core #1"){
-                    *pCpuTemp = V_R4(&v);
-                    ret = true;
+                VARIANT v;
+                VariantInit(&v);
+                BSTR partName = SysAllocString(L"Name");
+                hr = pObject->Get(partName, 0, &v, NULL, NULL);
+                SysFreeString(partName);
+                QString ss;
+                if (SUCCEEDED(hr)){
+                    ss = QString::fromWCharArray((wchar_t*)v.bstrVal);
+                    //qDebug() <<"name" << qPrintable(ss);
                 }
-                if(ss == "GPU Core"){
-                    *pGpuTemp = V_R4(&v);
-                    ret = true;
+                BSTR temp = SysAllocString(L"Value");
+                hr = pObject->Get(temp, 0, &v, NULL, NULL);
+                SysFreeString(temp);
+                if (SUCCEEDED(hr))
+                {
+                    if(ss == "CPU Core #1"){
+                        *pCpuTemp = V_R4(&v);
+                        ret = true;
+                    }
+                    if(ss == "GPU Core"){
+                        *pGpuTemp = V_R4(&v);
+                        ret = true;
+                    }
                 }
+                VariantClear(&v);
             }
-            VariantClear(&v);
         }
+        pEnum->Release();
     }
-    pEnum->Release();
+    catch(...){
+
+    }
 
     //qDebug("getTemp 5 time=%d", startTime.elapsed());
     return ret;
