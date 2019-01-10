@@ -5,7 +5,7 @@
 #include <QTimer>
 #include <QProcess>
 
-//#include <QRandomGenerator>
+#include <QRandomGenerator>
 
 class Com : public QSerialPort
 {
@@ -81,7 +81,7 @@ private:
     QString recvStr;    
     QTimer checkIspTimer;
 
-    //QRandomGenerator randGen;
+    QRandomGenerator randGen;
 
     void processStr(QString str);
     void sendCmd(const char* s);
@@ -89,15 +89,15 @@ private:
     void sendIspGoCmd();
     void resetDemoModeTimer();
 
-    bool randomBool()
-    {
-        return 0 + (qrand() % (1 - 0 + 1)) == 1;
-    }
+//    bool randomBool()
+//    {
+//        return 0 + (qrand() % (1 - 0 + 1)) == 1;
+//    }
 
-    int random_int(int min, int max)
-    {
-       return min + qrand() % (max+1 - min);
-    }
+//    int random_int(int min, int max)
+//    {
+//       return min + qrand() % (max+1 - min);
+//    }
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);

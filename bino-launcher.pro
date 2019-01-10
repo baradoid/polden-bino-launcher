@@ -47,4 +47,4 @@ RESOURCES += \
 
 LIBS += -lole32 -lWbemuuid -lOleAut32
 
-
+QMAKE_LFLAGS_RELEASE += -static -static-libgcc

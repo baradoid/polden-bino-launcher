@@ -396,11 +396,12 @@ void Com::handleDemoModePeriod()
             //enc2ValMovingStep = randGen.bounded(-50, 50);
             //qDebug("movingStep %d %d", enc1ValMovingStep, enc2ValMovingStep);
 
-            enc1ValMovingOffset = random_int(-4000, 4000); //randGen.bounded(-4000, 4000);
-            enc2ValMovingOffset = random_int(-4000, 4000); //randGen.bounded(-4000, 4000);
+            //enc1ValMovingOffset = random_int(-4000, 4000); //randGen.bounded(-4000, 4000);
+            enc2ValMovingOffset = randGen.bounded(-4000, 4000);
             enc1EvolStart = enc1Val;
             enc2EvolStart = enc2Val;
-            demoModeSteps = random_int(2, 6)*intervalsInSecond; //randGen.bounded(2, 6)*intervalsInSecond;
+            //demoModeSteps = random_int(2, 6)*intervalsInSecond;
+            demoModeSteps = randGen.bounded(2, 6)*intervalsInSecond;
             demoModeCurStepInd = demoModeSteps;
             qDebug("ints:%d movingOffset:%d %d %d %d", demoModeSteps/intervalsInSecond, enc1ValMovingOffset, enc2ValMovingOffset, enc1Val, enc2Val);
             emit msg(QString("demo:ints:%1 movingOffset:%2 %3 %4 %5").arg(demoModeSteps/intervalsInSecond).arg(enc1ValMovingOffset).arg(enc2ValMovingOffset).arg(enc1Val).arg(enc2Val));
@@ -421,7 +422,8 @@ void Com::handleDemoModePeriod()
         emit msg(QString("demo:encVal: %1 %2").arg(enc1Val).arg(enc2Val));
 
         if(demoModeCurStepInd <= 0){
-            demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
+            //demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
+            demoModeCurStepInd = randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond);
             demoModeState = hold;
             qDebug("hold for %d", demoModeCurStepInd/intervalsInSecond);
             emit msg(QString("demo:hold for %1").arg(demoModeCurStepInd/intervalsInSecond));
@@ -435,7 +437,8 @@ void Com::handleDemoModePeriod()
 
         demoModeCurStepInd--;
         if(demoModeCurStepInd <= 0){
-            bool bEndIter = randomBool(); //(bool)randGen.bounded(2);
+            //bool bEndIter = randomBool();
+            bool bEndIter = (bool)randGen.bounded(2);
             if(bEndIter == true){
                 demoModeState = walkOut;
                 qDebug("walkOut");
@@ -450,7 +453,8 @@ void Com::handleDemoModePeriod()
         //emit msg("human interface timeout. Start demo mode. walkOut");
         distVal ++;
         if(distVal >= 50){
-            demoModeSteps = random_int(10, 20)*intervalsInSecond; //randGen.bounded(10, 20)*intervalsInSecond;
+            //demoModeSteps = random_int(10, 20)*intervalsInSecond; //
+            demoModeSteps = randGen.bounded(10, 20)*intervalsInSecond;
             demoModeCurStepInd = demoModeSteps;
             demoModeState = idle;
             qDebug("idle for %d", demoModeCurStepInd/intervalsInSecond);
