@@ -403,6 +403,7 @@ void Com::handleDemoModePeriod()
             demoModeSteps = random_int(2, 6)*intervalsInSecond; //randGen.bounded(2, 6)*intervalsInSecond;
             demoModeCurStepInd = demoModeSteps;
             qDebug("ints:%d movingOffset:%d %d %d %d", demoModeSteps/intervalsInSecond, enc1ValMovingOffset, enc2ValMovingOffset, enc1Val, enc2Val);
+            emit msg(QString("demo:ints:%1 movingOffset:%2 %3 %4 %5").arg(demoModeSteps/intervalsInSecond).arg(enc1ValMovingOffset).arg(enc2ValMovingOffset).arg(enc1Val).arg(enc2Val));
         }
         else{
             distVal --;
@@ -416,12 +417,14 @@ void Com::handleDemoModePeriod()
         enc1Val = (enc1EvolStart+enc1Offset+(int)(enc1ValMovingOffset*sinVal))&0x1fff;
         enc2Val = (enc2EvolStart+enc2Offset+(int)(enc2ValMovingOffset*sinVal))&0x1fff;; //(enc2Val-1)&0x1fff;
 
-        qDebug("%f %d %d", sinVal, enc1Val, enc2Val);
+        qDebug("%f %d %d", sinVal, enc1Val, enc2Val);        
+        emit msg(QString("demo:encVal: %1 %2").arg(enc1Val).arg(enc2Val));
 
         if(demoModeCurStepInd <= 0){
             demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
             demoModeState = hold;
             qDebug("hold for %d", demoModeCurStepInd/intervalsInSecond);
+            emit msg(QString("demo:hold for %1").arg(demoModeCurStepInd/intervalsInSecond));
         }
         break;
     case hold:
@@ -436,6 +439,7 @@ void Com::handleDemoModePeriod()
             if(bEndIter == true){
                 demoModeState = walkOut;
                 qDebug("walkOut");
+                emit msg(QString("demo:walkOut"));
             }
             else{
                 demoModeState = walkIn;
@@ -450,6 +454,7 @@ void Com::handleDemoModePeriod()
             demoModeCurStepInd = demoModeSteps;
             demoModeState = idle;
             qDebug("idle for %d", demoModeCurStepInd/intervalsInSecond);
+            emit msg(QString("demo:idle for %1").arg(demoModeCurStepInd/intervalsInSecond));
         }
         break;
 
