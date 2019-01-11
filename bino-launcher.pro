@@ -29,7 +29,8 @@ SOURCES += \
     utils.cpp \
     com.cpp \
     unity.cpp \
-    temp.c
+    temp.c \
+    demo.cpp
 
 HEADERS += \
         dialog.h \
@@ -37,7 +38,8 @@ HEADERS += \
     utils.h \
     com.h \
     unity.h \
-    temp.h
+    temp.h \
+    demo.h
 
 FORMS += \
         dialog.ui

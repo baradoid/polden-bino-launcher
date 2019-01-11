@@ -14,6 +14,7 @@
 #include <QMessageBox>
 
 #include "unity.h"
+#include "demo.h"
 //#include <foldercompressor.h>
 //#define QUAZIP_STATIC
 
@@ -111,10 +112,15 @@ Dialog::Dialog(QWidget *parent) :
     appendLogString(QString("restore audio enable on startUp: ")+(bAudioEnableOnStartup? "true":"false"));
     ui->checkBoxAudioEnableOnStartup->setChecked(bAudioEnableOnStartup);
 
-    initComPort();
-
-
+    initComPort();        
     com->rangeThresh = settings.value("rangeThresh", 20).toInt();
+
+    demo = new Demo(this);
+    connect(demo, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(demo, &Demo::msg, [=](QString msg){
+        appendLogString("DEMO:"+msg);
+    });
+
 
     ui->lineEditRangeThresh->setValidator( new QIntValidator(0, 100, this) );
     ui->lineEditRangeThresh->setText(QString::number(com->rangeThresh));
@@ -229,7 +235,7 @@ Dialog::Dialog(QWidget *parent) :
     //QTimer::singleShot(100, this, SLOT(handleWbLoginTimeout()));
 
     bool bDemoEna = settings.value("demoEnable", 10).toBool();
-    appendLogString(QString("COM:demo ")+(bDemoEna? "enable":"disable"));
+    appendLogString(QString("DEMO: ")+(bDemoEna? "enable":"disable"));
     ui->checkBox_demoEna->setChecked(bDemoEna);
     on_checkBox_demoEna_clicked(bDemoEna);
 
@@ -281,7 +287,7 @@ Dialog::~Dialog()
 void Dialog::initComPort()
 {
     com = new Com(this);
-    connect(com, SIGNAL(newPosData(uint16_t,uint16_t,int)), this, SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(com, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
     connect(com, &Com::msg, [=](QString msg){
         appendLogString("COM:"+msg);
     });
@@ -1073,22 +1079,16 @@ void Dialog::handleUpdateUi()
 
     //on_pushButtonFindWnd_clicked();
 
-    QString state = QVariant::fromValue(com->demoModeState).value<QString>();
-    ui->lineEdit_ComDemoState->setText(state);
+    QString state = QVariant::fromValue(demo->demoModeState).value<QString>();
+    ui->lineEdit_ComDemoState->setText(state);    
     float demoRemTime = 0;
-    switch(com->demoModeState){
-    case Com::idle:
-        demoRemTime = com->demoModePeriod.remainingTime()/100.;
-        break;
-    default:
-        demoRemTime = com->demoModeCurStepInd/(1000/com->demoModePeriod.interval());
-        break;
-    }
+    if(demo->demoModeState != Demo::idle)
+        demoRemTime = demo->demoModeCurStepInd/(1000/demo->demoModePeriod.interval());
 
     ui->lineEdit_ComDemoTime->setText(QString::number((int)demoRemTime/*, 'f', 1*/));
     ui->lineEdit_comFwmVer->setText(com->firmwareVer);
 
-    ui->lineEdit_ComDemoModeCycleCounter->setText(QString::number(com->demoCycleCount));
+    ui->lineEdit_ComDemoModeCycleCounter->setText(QString::number(demo->demoCycleCount));
 
     //update unity section
     //check if all exists
@@ -1465,6 +1465,7 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
     /*enc1Val = xPos1;
     enc2Val = xPos2;
     distVal = dist;*/
+    qDebug("np> %d %d %d", xPos1, xPos2, dist);
     sendPosData();
 }
 
@@ -1483,14 +1484,23 @@ void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
 
 void Dialog::on_checkBox_demoEna_clicked(bool checked)
 {
+//    if(checked){
+//        disconnect(SIGNAL(Com::newPosData));
+//        connect(demo, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+//    }
+//    else{
+//        disconnect(SIGNAL(Demo::newPosData));
+//        connect(com, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+
+//    }
     settings.setValue("demoEnable", checked);
 
     ui->lineEdit_ComDemoState->setEnabled(checked);
     ui->lineEdit_ComDemoTime->setEnabled(checked);
     ui->lineEdit_ComDemoModeCycleCounter->setEnabled(checked);
     //ui->pushButton_ComDemoStart->setEnabled(checked);
-    com->enableDemo(checked);
-
+    //com->enableDemo(checked);
+    demo->enableDemo(checked);
 }
 
 void Dialog::on_pushButton_ComStartIsp_clicked()

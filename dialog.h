@@ -15,6 +15,7 @@
 #include "com.h"
 #include "utils.h"
 #include "unity.h"
+#include "demo.h"
 
 namespace Ui {
 class Dialog;
@@ -113,7 +114,8 @@ private:
     //TWebState webState;
 //    QString guid;
     Web *web;
-    Com *com;    
+    Com *com;
+    Demo *demo;
 
     void setConnectionError(QString errStr);
     void setConnectionSuccess();

@@ -5,7 +5,8 @@
 #include <QTimer>
 #include <QProcess>
 
-#include <QRandomGenerator>
+//#include <QRandomGenerator>
+
 
 class Com : public QSerialPort
 {
@@ -21,32 +22,13 @@ public:
     //int distVal;
     uint16_t rangeThresh;
     uint32_t comPacketsRcvd, comErrorPacketsRcvd;
-    uint32_t demoCycleCount;
-
-    //int16_t enc1ValMovingStep, enc2ValMovingStep;
-    int16_t enc1ValMovingOffset, enc2ValMovingOffset;
-    int16_t enc1EvolStart, enc2EvolStart;
 
     QString firmwareVer;
-
     QString fwPath;
-
-    QProcess fwProcess;
-
-    enum TDemoModeState {
-        idle, idleTimeout, walkIn, moving, hold, walkOut
-    };
-
-    Q_ENUM(TDemoModeState)
-
-    int demoModeSteps, demoModeCurStepInd;
-    QTimer demoModePeriod, pingTimer;
-    TDemoModeState demoModeState;
+    QProcess fwProcess;   
+    QTimer pingTimer;
 
     void setZero();
-    void startDemo();
-    void stopDemo();
-    void enableDemo(bool);
 
     void hwRestart();
 
@@ -81,23 +63,10 @@ private:
     QString recvStr;    
     QTimer checkIspTimer;
 
-    QRandomGenerator randGen;
-
     void processStr(QString str);
     void sendCmd(const char* s);
 
     void sendIspGoCmd();
-    void resetDemoModeTimer();
-
-//    bool randomBool()
-//    {
-//        return 0 + (qrand() % (1 - 0 + 1)) == 1;
-//    }
-
-//    int random_int(int min, int max)
-//    {
-//       return min + qrand() % (max+1 - min);
-//    }
 
 signals:
     void newPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
@@ -106,7 +75,7 @@ signals:
 
 private slots:
     void handleSerialReadyRead();    
-    void handleDemoModePeriod();
+    //void handleDemoModePeriod();
     void handleCheckIspRunning();
     void handleProcessFinished(int,QProcess::ExitStatus);
 
