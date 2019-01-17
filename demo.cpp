@@ -54,6 +54,7 @@ void Demo::enableDemo(bool bEna)
 void Demo::handleDemoModePeriod()
 {
     int intervalsInSecond = 1000/demoModePeriod.interval();
+    float prcnt = 0;
     qreal sinVal;
     switch(demoModeState){
     case idle:
@@ -92,15 +93,15 @@ void Demo::handleDemoModePeriod()
         break;
     case moving:
 
-        //emit msg("human interface timeout. Start demo mode. moveLeft");
         demoModeCurStepInd--;
-        sinVal = (qSin(-M_PI_2 + M_PI*(demoModeSteps-demoModeCurStepInd)/(float)demoModeSteps)+1)/2;
+        //emit msg("human interface timeout. Start demo mode. moveLeft");        
+        prcnt = ((demoModeSteps-1)-demoModeCurStepInd)/(float)(demoModeSteps-1);
+        sinVal = (qSin(-M_PI_2 + M_PI*prcnt)+1)/2;
         enc1Val = (enc1EvolStart+(int)(enc1ValMovingOffset*sinVal))&0x1fff;
         enc2Val = (enc2EvolStart+(int)(enc2ValMovingOffset*sinVal))&0x1fff;; //(enc2Val-1)&0x1fff;
 
-        qDebug("%f %d %d", sinVal, enc1Val, enc2Val);
-        emit msg(QString("encVal: %1 %2").arg(enc1Val).arg(enc2Val));
-
+        qDebug("prcnt:%f, sv:%f, %d %d", prcnt, sinVal, enc1Val, enc2Val);
+        emit msg(QString("encVal: %1 %2").arg(enc1Val).arg(enc2Val));        
         if(demoModeCurStepInd <= 0){
             //demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
             demoModeCurStepInd = randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond);
