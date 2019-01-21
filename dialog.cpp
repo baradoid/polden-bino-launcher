@@ -582,7 +582,7 @@ void Dialog::initUnity()
         }
     });
 
-    ui->lineEditFpsLimit->setValidator(new QIntValidator(10,999, this));
+    ui->lineEditFpsLimit->setValidator(new QIntValidator(1,999, this));
     QString fpsLimit = settings.value("watchdog/fpsLimit", 30).toString();
     appendLogString(QString("WD:restore fps limit:\"")+(fpsLimit.isEmpty()? "n/a":fpsLimit)+ "\"");
     ui->lineEditFpsLimit->setText(fpsLimit);

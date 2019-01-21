@@ -724,6 +724,9 @@
       <height>20</height>
      </rect>
     </property>
+    <property name="focusPolicy">
+     <enum>Qt::StrongFocus</enum>
+    </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
     </property>
@@ -1256,7 +1259,7 @@
        <item>
         <widget class="QLabel" name="label_19">
          <property name="text">
-          <string>CPU:</string>
+          <string/>
          </property>
          <property name="pixmap">
           <pixmap resource="resources.qrc">:/res/images/temperature.png</pixmap>
@@ -1874,13 +1877,6 @@ zero</string>
   <zorder>pushButtonSelectRootPath</zorder>
   <zorder>pushButton_showRootPath</zorder>
   <zorder>groupBox_4</zorder>
-  <zorder>lineEditBuldStartupParams</zorder>
-  <zorder>pushButtonWdSelectPath</zorder>
-  <zorder>lineEditBuildPath</zorder>
-  <zorder>label_14</zorder>
-  <zorder>lineEditBuldStartupParams</zorder>
-  <zorder>pushButtonWdSelectPath</zorder>
-  <zorder>lineEditBuildPath</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
