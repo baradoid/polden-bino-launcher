@@ -170,7 +170,7 @@ Dialog::Dialog(QWidget *parent) :
 
     QTimer *uiUpdateTimer = new QTimer(this);
     connect(uiUpdateTimer, SIGNAL(timeout()), this, SLOT(handleUpdateUi()));
-    uiUpdateTimer->setInterval(250);
+    uiUpdateTimer->setInterval(50);
     uiUpdateTimer->start();
 
     uiUpdateTimer = new QTimer(this);
