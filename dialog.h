@@ -149,6 +149,7 @@ private slots:
     void on_pushButtonFindWnd_clicked();
 
     void handleComNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
+    void handleDemoNewPosData(uint16_t enc1Val, uint16_t enc2Val, int dist);
 
     //void on_pushButton_ComDemoStart_clicked();
     void on_checkBox_demoEna_clicked(bool checked);

@@ -116,7 +116,7 @@ Dialog::Dialog(QWidget *parent) :
     com->rangeThresh = settings.value("rangeThresh", 20).toInt();
 
     demo = new Demo(this);
-    connect(demo, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleComNewPosData(uint16_t,uint16_t,int)));
+    connect(demo, SIGNAL(newPosData(uint16_t,uint16_t,int)), SLOT(handleDemoNewPosData(uint16_t,uint16_t,int)));
     connect(demo, &Demo::msg, [=](QString msg){
         appendLogString("DEMO:"+msg);
     });
@@ -1455,6 +1455,42 @@ void Dialog::setConnectionSuccess()
 //    return true;
 //}
 
+void Dialog::handleDemoNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
+{
+    qDebug("demo np> %d %d %d", xPos1, xPos2, dist);
+    Unity::CbDataUdp cbdata;
+    if(horEncSelectBG->checkedId() == 0){
+        cbdata.pos1 = (int16_t)((xPos1-com->enc1Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((xPos2-com->enc2Offset)&0x1fff);
+    }
+    else if(horEncSelectBG->checkedId() == 1){
+        cbdata.pos1 = (int16_t)((xPos2-com->enc2Offset)&0x1fff);
+        cbdata.pos2 = (int16_t)((xPos1-com->enc1Offset)&0x1fff);
+    }
+    if(checkEnc1Inv->isChecked())
+        cbdata.pos1 = 0x1fff - cbdata.pos1;
+    if(checkEnc2Inv->isChecked())
+        cbdata.pos2 = 0x1fff - cbdata.pos2;
+    //cbdata.distance = (int16_t)dist;
+    bool distThreshExceed = ui->checkBoxRangeAlwaysOn->isChecked() ||(dist<com->rangeThresh);
+    cbdata.rangeThresh = distThreshExceed? 1:0;
+
+    ui->checkBoxThreshExcess->setChecked(distThreshExceed);
+
+    if((distThreshExceed == true) && (lastDistTreshState == false)){
+        distanceOverThreshCnt ++ ;
+        ui->lineEditRangeTreshExceedCount->setText(QString::number(distanceOverThreshCnt));
+    }
+    lastDistTreshState = distThreshExceed;
+
+//    for(int r=0; r<ui->tableWidgetClients->rowCount(); r++){
+//        TSenderInfo *sndInfo = (TSenderInfo*)ui->tableWidgetClients->item(r, 0)->data(Qt::UserRole).toInt();
+//        //qInfo() << sizeof(CbDataUdp);
+//        udpSocket->writeDatagram((const char*)&cbdata, sizeof(Unity::CbDataUdp), sndInfo->addr, sndInfo->port);
+//    }
+
+    unity->sendCbData(cbdata);
+}
 
 void Dialog::handleComNewPosData(uint16_t xPos1, uint16_t xPos2, int dist)
 {    
