@@ -5,7 +5,8 @@
 Demo::Demo(QObject *parent) : QObject(parent),
     enc1Val(0), enc2Val(0), distVal(50),
     demoModePeriod(this), demoModeState(idle),
-    demoCycleCount(0)
+    demoCycleCount(0),
+    enc1ValMovingOffset(0), enc2ValMovingOffset(0)
 {
     //demoModePeriod.setInterval(50);
 
@@ -55,7 +56,9 @@ void Demo::handleDemoModePeriod()
 {
     int intervalsInSecond = 1000/demoModePeriod.interval();
     float prcnt = 0;
-    qreal sinVal;
+    float sinVal;
+    //uint16_t enc1Val, enc2Val;
+
     switch(demoModeState){
     case idle:
         //emit msg("human interface timeout. Start demo mode");
@@ -77,7 +80,7 @@ void Demo::handleDemoModePeriod()
             //enc2ValMovingStep = randGen.bounded(-50, 50);
             //qDebug("movingStep %d %d", enc1ValMovingStep, enc2ValMovingStep);
 
-            //enc1ValMovingOffset = random_int(-4000, 4000); //randGen.bounded(-4000, 4000);
+            enc1ValMovingOffset = randGen.bounded(-4000, 4000); //randGen.bounded(-4000, 4000);
             enc2ValMovingOffset = randGen.bounded(-4000, 4000);
             enc1EvolStart = enc1Val;
             enc2EvolStart = enc2Val;
@@ -96,11 +99,11 @@ void Demo::handleDemoModePeriod()
         demoModeCurStepInd--;
         //emit msg("human interface timeout. Start demo mode. moveLeft");        
         prcnt = ((demoModeSteps-1)-demoModeCurStepInd)/(float)(demoModeSteps-1);
-        sinVal = (qSin(-M_PI_2 + M_PI*prcnt)+1)/2;
+        sinVal = (qSin(-M_PI_2 + M_PI*prcnt)+1)/2;        
         enc1Val = (enc1EvolStart+(int)(enc1ValMovingOffset*sinVal))&0x1fff;
         enc2Val = (enc2EvolStart+(int)(enc2ValMovingOffset*sinVal))&0x1fff;; //(enc2Val-1)&0x1fff;
 
-        qDebug("prcnt:%f, sv:%f, %d %d", prcnt, sinVal, enc1Val, enc2Val);
+        //qDebug("prcnt:%f, sv:%f, %d %d", prcnt, sinVal, enc1Val, enc2Val);
         emit msg(QString("encVal: %1 %2").arg(enc1Val).arg(enc2Val));        
         if(demoModeCurStepInd <= 0){
             //demoModeCurStepInd = random_int(5*intervalsInSecond, 20*intervalsInSecond); //randGen.bounded(5*intervalsInSecond, 20*intervalsInSecond); //125;
